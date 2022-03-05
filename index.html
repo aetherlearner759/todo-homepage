@@ -8,6 +8,8 @@
 	<link rel="stylesheet" type="text/css" href="./style.css">
 	<script type="text/javascript" src="./script.js" defer></script>
 
+	<!-- Font awesome kit's code -->
+	<script src="https://kit.fontawesome.com/63c9229ecc.js" crossorigin="anonymous"></script>
 <!-- 
 COMPONENT - Clock & Date
 	TODO: Have a live clock
@@ -66,7 +68,142 @@ COMPONENT - Graph/Analytics
 </head>
 <body>
 
-<h1>Hello World</h1>
+
+<div id="clock-container" class="clock-container">
+	<h1 id="clock-time">HH:MM</h1>
+	<h2 id="clock-date">YYYY-MM-DD</h2>	
+</div>
+
+<!-- FIXME: action attribute is hard coded -->
+<form id="search-container" class="search-container" method="get" action="http://duckduckgo.com/">
+	<input type="text" name="q" placeholder="Search" autocomplete="off">
+</form>
+
+
+<div id="btn-container" class="btn-container">
+	<div id="services-container" class="services-container">
+		<button id="services-btn" class="icon-btn">
+			<i class="fa-solid fa-table-cells" serviceBtn></i>
+		</button>
+		<div class="services-dropdown">
+			<a href="https://mail.google.com/mail/?authuser=0"><img src="./res/img/gmailicon.png"></a>
+			<a href="https://drive.google.com/?authuser=1"><img src="./res/img/googledriveicon.png"></a>
+			<a href="https://docs.google.com/document/?usp=docs_ald&authuser=0"><img src="./res/img/googledocsicon.png"></a>
+			<a href="https://www.youtube.com/"><img src="./res/img/youtubeicon.png"></a>
+			<a href="https://eclass.srv.ualberta.ca/my/"><img src="./res/img/eclassicon.png"></a>
+		</div>
+	</div>
+
+	<div id="settings-container" class="settings-container">
+		<button id="settings-btn" class="icon-btn">
+			<i class="fa-solid fa-gear"></i>
+		</button>
+		<form class="settings-dropdown">
+			<label for="search-engine-input">Change Preferred Search Engine: </label>
+			<input id="search-engine-input" type="text" name="searchengine">
+			<label>Restore Deleted Goals</label>
+			INPUT
+			<label>Edit Goals</label>
+			INPUT
+		</form>
+	</div>
+
+</div>
+
+
+<main>
+
+	<div id="calendar-container" class="calendar-container">
+		<div class="calendar-header">
+			<button id="cal-left" class="icon-btn small-btn">
+				<i class="fa-solid fa-chevron-left"></i>
+			</button>
+			<span id="calendar-ym">
+				YYYY-MM
+			</span>
+			<button id="cal-right" class="icon-btn small-btn">
+				<i class="fa-solid fa-chevron-right"></i>
+			</button>
+		</div>
+		<span class="cal-day">Sun</span>
+		<span class="cal-day">Mon</span>
+		<span class="cal-day">Tues</span>
+		<span class="cal-day">Wed</span>
+		<span class="cal-day">Thurs</span>
+		<span class="cal-day">Fri</span>
+		<span class="cal-day">Sat</span>
+	</div>
+
+
+	<div id="daily-container" class="daily-container">
+		
+		<div id="daily-header" class="daily-header">
+			<div class="daily-sort-btns">
+				Sort By:
+				<button id="sort-duedate-btn" class="icon-btn small-btn" title="Sort by duedate">
+					<i class="fa-solid fa-clock"></i>
+				</button>
+
+				<button id="sort-priority-btn" class="icon-btn small-btn" title="Sort by priority">
+					<i class="fa-solid fa-star"></i>
+				</button>
+			</div>
+
+			<button id="filter-comp-btn" class="icon-btn small-btn" title="Filter completed">
+				<i class="fa-solid fa-filter"></i>
+			</button>
+
+			<button id="add-daily-btn" class="icon-btn small-btn" title="Add Daily">
+				<i class="fa-solid fa-plus"></i>
+			</button>
+
+			<button id="show-project-btn" class="icon-btn small-btn" title="Look at Projects">
+				<i class="fa-solid fa-bullseye"></i>
+			</button>
+		</div>
+
+		<form id="daily-add-container" class="daily-add-container">
+			<label>Add Todo Task</label>
+			<input type="text" name="t">
+
+			<label>Rate Priority</label>
+			<div id="todo-add-priority" class="todo-add-priority">
+				<i id="priority1" class="star-select fa-solid fa-star"></i>
+				<i id="priority2" class="star-select fa-solid fa-star"></i>
+				<i id="priority3" class="star-select fa-solid fa-star"></i>
+				<i id="priority4" class="fa-solid fa-star"></i>
+				<i id="priority5" class="fa-solid fa-star"></i>
+				<input type="text" name="p" value="3">
+			</div>
+		</form>
+
+		<ul id="dailies" class="dailies">
+
+			<li>
+				<span class="daily-name">Daily Title</span>	
+				
+
+				<button id="daily-del-btn" class="icon-btn small-btn">
+					<i class="fa-solid fa-trash"></i>
+				</button>
+
+				<span class="daily-priority">
+					<i class="fa-solid fa-star"></i>
+					<i class="fa-solid fa-star"></i>
+					<i class="fa-solid fa-star"></i>
+					<i class="fa-solid fa-star"></i>
+					<i class="fa-solid fa-star"></i>
+				</span>	
+
+			</li>
+			
+		</ul>
+
+	</div>
+
+
+</main>
+
 
 </body>
 </html>
