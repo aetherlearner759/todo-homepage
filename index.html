@@ -164,23 +164,28 @@ COMPONENT - Graph/Analytics
 			<button id="show-project-btn" class="icon-btn small-btn" title="Look at Projects">
 				<i class="fa-solid fa-bullseye"></i>
 			</button>
+
+			<form id="daily-add-container" class="daily-add-container">
+				<input placeholder="Daily Title" type="text" name="t" autocomplete="off">
+
+				<input placeholder="Daily Subtitle" type="text" name="s" autocomplete="off">
+
+				<div id="daily-add-priority" class="daily-add-priority">
+					Rate Priority: 
+					<i id="priority1" class="star-select fa-solid fa-star"></i>
+					<i id="priority2" class="star-select fa-solid fa-star"></i>
+					<i id="priority3" class="star-select fa-solid fa-star"></i>
+					<i id="priority4" class="fa-solid fa-star"></i>
+					<i id="priority5" class="fa-solid fa-star"></i>
+					<input type="text" name="p" value="3">
+				</div>
+
+				<button id="daily-add-submit" class="daily-add-submit">Add</button>
+			</form>
+
 		</div>
 
-		<form id="daily-add-container" class="daily-add-container">
-			<label>Add Todo Task</label>
-			<input type="text" name="t">
-
-			<label>Rate Priority</label>
-			<div id="todo-add-priority" class="todo-add-priority">
-				<i id="priority1" class="star-select fa-solid fa-star"></i>
-				<i id="priority2" class="star-select fa-solid fa-star"></i>
-				<i id="priority3" class="star-select fa-solid fa-star"></i>
-				<i id="priority4" class="fa-solid fa-star"></i>
-				<i id="priority5" class="fa-solid fa-star"></i>
-				<input type="text" name="p" value="3">
-			</div>
-		</form>
-
+			
 		<ul id="daily-list" class="daily-list">
 
 			<li>

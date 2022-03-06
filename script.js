@@ -1,12 +1,17 @@
 // Get DOM objects
-clockTimeEl = document.getElementById("clock-time");
-clockDateEl = document.getElementById("clock-date");
-dailyListEl = document.getElementById("daily-list");
-serviceContainer = document.getElementById("services-container")
+const clockTimeEl = document.getElementById("clock-time");
+const clockDateEl = document.getElementById("clock-date");
+const dailyListEl = document.getElementById("daily-list");
+const serviceContainer = document.getElementById("services-container");
+const dailyHeaderEl = document.getElementById("daily-header");
+const dailyPriorContainer = document.getElementById("daily-add-priority");
+const addDailyBtn = document.getElementById("add-daily-btn");
+const addDailyContainer = document.getElementById("daily-add-container");
 
 // Global variables
 let db; 
-dailyArray = [];
+let dailyArray = [];
+let selectedDate = new Date();
 
 
 init();
@@ -127,7 +132,7 @@ function addDailyDB(item) {
 		trans.oncomplete = function(e) {
 			return resolve(true);
 		}
-		trans.onerror = function () {
+		trans.onerror = function(e) {
 			return reject(false);
 		}
 	});
@@ -229,6 +234,78 @@ document.addEventListener("click", (e) => {
 		serviceContainer.classList.remove('active');
 	}
 });
+
+
+// Add click functionality to show add task 
+addDailyBtn.addEventListener("click", () => {
+	dailyHeaderEl.classList.toggle("show");
+});
+
+// Add functionality to select priority stars in add daily
+dailyPriorContainer.addEventListener("click", (e) => {
+
+	if (e.target.id.startsWith("priority")) {
+		let priorAmt = e.target.id[8];
+
+		const stars = dailyPriorContainer.querySelectorAll("i");
+
+		stars.forEach(star => {
+			if (star.id[8] <= priorAmt) {
+				star.classList.add("star-select");
+			}
+			else {
+				star.classList.remove("star-select");
+			}
+		});
+
+		const val = dailyPriorContainer.querySelector("input");
+		val.value = priorAmt;
+	}
+});
+
+
+// Add daily submit functionality
+addDailyContainer.addEventListener("submit", async (e) => {
+	e.preventDefault();
+
+	if (e.target.t.value == "") {
+		alert("Please type in the daily's title");
+		return;
+	}
+
+	let item = {
+		title: e.target.t.value,
+		subtitle: e.target.s.value,
+		date: getYYYYMMDD(selectedDate),
+		prior: e.target.p.value,
+		comp: false
+	};
+
+	let req = await addDailyDB(item);
+	
+	if ( req ) {
+		console.log("Successfully added daily");
+		e.target.t.value = "";
+		e.target.s.value = "";
+		e.target.p.value = 3;
+
+		const stars = dailyPriorContainer.querySelectorAll("i");
+
+		stars.forEach(star => {
+			if (star.id[8] <= 3) {
+				star.classList.add("star-select");
+			}
+			else {
+				star.classList.remove("star-select");
+			}
+		});
+	}
+	else {
+		console.log("Failed to add daily");
+	}
+
+});
+
 
 
 /*
