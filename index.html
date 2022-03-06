@@ -19,7 +19,7 @@ COMPONENT - Search Bar
 	TODO: Have a search bar that queries to preferred search engine (specified in settings)
 
 COMPONENT - Services Dropdown
-	TODO: Have a dropdown menu that links to commonly used services
+	DONE: Have a dropdown menu that links to commonly used services
 		Google Drive, Google Docs, Gmail, Youtube, Eclass, ...
 
 COMPONENT - Daily Tasks
@@ -75,7 +75,7 @@ COMPONENT - Graph/Analytics
 </div>
 
 <!-- FIXME: action attribute is hard coded -->
-<form id="search-container" class="search-container" method="get" action="http://duckduckgo.com/">
+<form id="search-container" class="search-container" method="get" action="http://google.com/search">
 	<input type="text" name="q" placeholder="Search" autocomplete="off">
 </form>
 
@@ -83,9 +83,9 @@ COMPONENT - Graph/Analytics
 <div id="btn-container" class="btn-container">
 	<div id="services-container" class="services-container">
 		<button id="services-btn" class="icon-btn">
-			<i class="fa-solid fa-table-cells" serviceBtn></i>
+			<i class="fa-solid fa-table-cells"></i>
 		</button>
-		<div class="services-dropdown">
+		<div id="services-dropdown" class="services-dropdown">
 			<a href="https://mail.google.com/mail/?authuser=0"><img src="./res/img/gmailicon.png"></a>
 			<a href="https://drive.google.com/?authuser=1"><img src="./res/img/googledriveicon.png"></a>
 			<a href="https://docs.google.com/document/?usp=docs_ald&authuser=0"><img src="./res/img/googledocsicon.png"></a>

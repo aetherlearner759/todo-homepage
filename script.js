@@ -2,8 +2,11 @@
 clockTimeEl = document.getElementById("clock-time");
 clockDateEl = document.getElementById("clock-date");
 dailyListEl = document.getElementById("daily-list");
+serviceContainer = document.getElementById("services-container")
 
 // Global variables
+let db; 
+dailyArray = [];
 
 
 init();
@@ -190,6 +193,42 @@ function deleteDB() {
 		console.log("Database failed to be deleted");
 	}
 }
+
+// FIXME: Delete this function on deployment
+function insertDB() {
+	dates = ["2022-03-06", "2022-03-07", "2022-03-08", "2022-03-09", "2022-03-10", "2022-03-11", "2022-03-12", "2022-02-06", "2022-04-06"];
+
+	let item = {
+		title: "",
+		subtitle: "",
+		date: "",
+		prior: "",
+		comp: false
+	};
+
+	for (let i = 1; i <= 100; i++){
+		item.title = "Task " + i;
+		item.subtitle = "Subtitle "+ i;
+		item.date = dates[Math.floor(Math.random()*dates.length)];
+		item.prior = Math.ceil(Math.random()*5);
+		item.comp = false;
+		addDailyDB(item);
+	}
+}
+
+
+// Add click functionality to services dropdown
+document.addEventListener("click", (e) => {
+	const isDropdownButton = e.target.matches("#services-btn i");
+	const inDropdown = e.target.matches("#services-dropdown");
+
+	if(isDropdownButton) {
+		serviceContainer.classList.toggle('active');
+	}
+	else if (!inDropdown) {
+		serviceContainer.classList.remove('active');
+	}
+});
 
 
 /*

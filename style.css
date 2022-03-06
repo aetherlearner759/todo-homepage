@@ -119,13 +119,48 @@ body {
 }
 
 .services-container {
-
+	display: inline;
 }
 
 .services-dropdown {
-	/*FIXME:  displayed dropdown none for now */
-	display: none; 
 	position: absolute;
+
+	background-color: var(--bgLight, #eee);
+	box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.05);
+	border-radius: 10px;
+	top: calc(100% + 0.5rem);
+	right: 0rem;
+
+	height: 250px;
+	width: 250px;
+
+	display: flex;
+	align-content: flex-start;
+	justify-content: flex-start;
+	flex-wrap: wrap;
+
+	margin: 0;
+	padding: 1rem;
+
+	opacity: 0;
+	pointer-events: none;
+	transform: translateY(-10px);
+
+	transition: opacity 200ms ease-in-out, transform 200ms ease-in-out;
+}
+
+.services-container.active > .services-dropdown{
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.services-dropdown img {
+	width: 2.5rem;
+	height: 2.5rem;
+	object-fit: cover;
+
+	margin: 1rem;
 }
 
 .settings-dropdown {
