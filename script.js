@@ -1,11 +1,17 @@
 // Get DOM objects
+clockTimeEl = document.getElementById("clock-time");
+clockDateEl = document.getElementById("clock-date");
 dailyListEl = document.getElementById("daily-list");
 
+// Global variables
 
 
 init();
 
 async function init() {
+
+	updateClock()
+	setInterval(updateClock, 1000)
 
 	if ( !(await openDB()) ) {
 		console.log("Database failed to open");
@@ -184,6 +190,21 @@ function deleteDB() {
 		console.log("Database failed to be deleted");
 	}
 }
+
+
+/*
+Updates the clock container with the right time and date
+*/
+function updateClock() {
+	curDate = new Date()
+
+	let hour = curDate.getHours();
+	let min = curDate.getMinutes();
+	clockTimeEl.innerText = `${(hour%12 == 0) ? 12 : hour%12} : ${(min < 10) ? "0"+min : min} ${(hour < 12) ? "AM" : "PM"}`
+
+	clockDateEl.innerText = getYYYYMMDD(curDate);
+}
+
 
 /*
 Helper function.
