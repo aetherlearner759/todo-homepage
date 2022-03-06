@@ -1,3 +1,163 @@
+'use strict';
+
+class DBObj {
+	// Private attributes
+	#db;
+
+	constructor() {
+	}
+
+	/*
+	Opens main_db database and returns a promise containing a boolean value of 
+	whether it succeeded or not. 
+	If main_db does not exist then it sets up the main_db database
+	*/
+	async openDB() {
+
+		return new Promise((resolve, reject) => {
+			let req = indexedDB.open('main_db');
+
+			req.onsuccess = () => {
+				this.#db = req.result;
+				return resolve(true);
+			};
+
+			req.onerror = () => {
+				return reject(false);
+			};
+
+			req.onupgradeneeded = (e) => {
+				this.#db = e.target.result; 
+
+				// Create object store to store daily tasks
+				let todoObjStore = db.createObjectStore('daily_os', { keyPath: 'did', autoIncrement:true });
+
+				// Specify schema of the daily object store
+				todoObjStore.createIndex('title', 'title', { unique:false });
+				todoObjStore.createIndex('subtitle', 'subtitle', { unique:false });
+				todoObjStore.createIndex('date', 'date', { unique: false });
+			  	todoObjStore.createIndex('prior', 'prior', { unique: false });
+				todoObjStore.createIndex('comp', 'comp', { unique: false });
+
+				// FIXME: We did not add other object stores like
+				// projects, duedates, subtasks, and maybe others
+
+			 	console.log("Database setup complete");
+			};
+		});
+	}
+
+
+	/*
+	Given JS date object, return a promise of an array of dailies on that date.
+	*/
+	loadDailyDB(date) {
+
+		return new Promise((resolve) => {
+
+			array = [];
+			date = getYYYYMMDD(date); 
+
+			// Set up transaction
+			const trans = this.#db.transaction(['daily_os'], 'readonly');
+			
+			// Set up cursor
+			const dateIndex = trans.objectStore('daily_os').index('date');
+			const keyRange = IDBKeyRange.only(date);
+			const cursorReq = dateIndex.openCursor(keyRange);
+
+			cursorReq.onsuccess = (e) => {
+				const cursor = e.target.result;
+				if (cursor) {
+					const daily = cursor.value;
+					array.push(daily);
+					cursor.continue();
+				}	
+				else {
+					return resolve(array);
+				}
+			};
+		});
+	}
+
+
+	/*
+	Given a JSON-formatted item, add the item to the daily objectstore
+	*/
+	addDailyDB(item) {
+
+		return new Promise((resolve, reject) => {
+
+			const trans = this.#db.transaction(['daily_os'], 'readwrite');
+			const req = trans.objectStore('daily_os').add(item);
+
+			req.onsuccess = function(e) {
+				item.did = e.target.result;
+				return resolve(true);
+			};
+			trans.oncomplete = function(e) {
+				return resolve(true);
+			}
+			trans.onerror = function(e) {
+				return reject(false);
+			}
+		});
+	}
+
+
+	/*
+	Delete a daily from daily objectstore given its id
+	*/
+	deleteDailyDB(id) {
+
+		return new Promise((resolve, reject) => {
+			const trans = this.#db.transaction(['daily_os'], 'readwrite');
+			const req = trans.objectStore('daily_os').delete(id);
+
+			req.onsuccess = (e) => {
+				return resolve(true);
+			}
+			req.oncomplete = (e) => {
+				return resolve(true);
+			}
+			req.onerror = (e) => {
+				return reject(false);
+			}
+		});
+	}
+
+
+	/*
+	Toggle the complete attribute of a daily from daily objectore given its id
+	*/
+	toggleCompTodoDB(id) {
+
+		return new Promise((resolve, reject) => {
+			const trans = this.#db.transaction(['daily_os'], 'readwrite');
+			const objStore = trans.objectStore('daily_os');
+			const req = objStore.get(id);
+
+			req.onsuccess = (e) => {
+				var daily = e.target.result;
+				daily.comp = !daily.comp;
+
+				var reqUpdate = objStore.put(daily);
+				reqUpdate.onerror = (e) => {
+					return resolve(false);
+				}
+				reqUpdate.onsuccess = (e) => {
+					return resolve(true);
+				}
+			}
+		});
+	}
+}
+
+
+const mainNameSpace = function() {
+
+
+
 // Get DOM objects
 const clockTimeEl = document.getElementById("clock-time");
 const clockDateEl = document.getElementById("clock-date");
@@ -8,20 +168,21 @@ const dailyPriorContainer = document.getElementById("daily-add-priority");
 const addDailyBtn = document.getElementById("add-daily-btn");
 const addDailyContainer = document.getElementById("daily-add-container");
 
-// Global variables
+// "global" variables
 let db; 
-let dailyArray = [];
+const dailyArray = [];
 let selectedDate = new Date();
 
 
-init();
-
 async function init() {
 
+	addEventListeners();
 	updateClock()
 	setInterval(updateClock, 1000)
 
-	if ( !(await openDB()) ) {
+	db = new DBObj();
+
+	if ( !(await db.openDB()) ) {
 		console.log("Database failed to open");
 		const errorTodoEl = document.createElement('li');
 		errorTodoEl.innerHTML = `
@@ -31,160 +192,113 @@ async function init() {
 
 		return false;
 	}
-
 	// Now do stuff with opened database
+	console.log("succ")
 
 }
 
 
-/*
-Opens main_db database and returns a promise containing a boolean value of 
-whether it succeeded or not. 
-If main_db does not exist then it sets up the main_db database
-*/
-function openDB() {
+function addEventListeners() {
 
-	return new Promise((resolve, reject) => {
-		let req = indexedDB.open('main_db');
+	// Add click functionality to services dropdown
+	document.addEventListener("click", (e) => {
+		const isDropdownButton = e.target.matches("#services-btn i");
+		const inDropdown = e.target.matches("#services-dropdown");
 
-		req.onsuccess = () => {
-			db = req.result;
-			return resolve(true);
-		};
-
-		req.onerror = () => {
-			return reject(false);
-		};
-
-		req.onupgradeneeded = (e) => {
-			db = e.target.result; 
-
-			// Create object store to store daily tasks
-			let todoObjStore = db.createObjectStore('daily_os', { keyPath: 'did', autoIncrement:true });
-
-			// Specify schema of the daily object store
-			todoObjStore.createIndex('title', 'title', { unique:false });
-			todoObjStore.createIndex('subtitle', 'subtitle', { unique:false });
-			todoObjStore.createIndex('date', 'date', { unique: false });
-		  	todoObjStore.createIndex('prior', 'prior', { unique: false });
-			todoObjStore.createIndex('comp', 'comp', { unique: false });
-
-			// FIXME: We did not add other object stores like
-			// projects, duedates, subtasks, and maybe others
-
-		 	console.log("Database setup complete");
-		};
+		if(isDropdownButton) {
+			serviceContainer.classList.toggle('active');
+		}
+		else if (!inDropdown) {
+			serviceContainer.classList.remove('active');
+		}
 	});
-}
 
 
-/*
-Given JS date object, return a promise of an array of dailies on that date.
-*/
-function loadDailyDB(date) {
+	// Add click functionality to show add task 
+	addDailyBtn.addEventListener("click", () => {
+		dailyHeaderEl.classList.toggle("show");
+	});
 
-	return new Promise((resolve) => {
+	// Add functionality to select priority stars in add daily
+	dailyPriorContainer.addEventListener("click", (e) => {
 
-		array = [];
-		date = getYYYYMMDD(date); 
+		if (e.target.id.startsWith("priority")) {
+			let priorAmt = e.target.id[8];
 
-		// Set up transaction
-		const trans = db.transaction(['daily_os'], 'readonly');
+			const stars = dailyPriorContainer.querySelectorAll("i");
+
+			stars.forEach(star => {
+				if (star.id[8] <= priorAmt) {
+					star.classList.add("star-select");
+				}
+				else {
+					star.classList.remove("star-select");
+				}
+			});
+
+			const val = dailyPriorContainer.querySelector("input");
+			val.value = priorAmt;
+		}
+	});
+
+
+	// Add daily submit functionality
+	addDailyContainer.addEventListener("submit", async (e) => {
+		e.preventDefault();
+
+		if (e.target.t.value === "") {
+			alert("Please type in the daily's title");
+			return;
+		}
+
+		let item = {
+			title: e.target.t.value,
+			subtitle: e.target.s.value,
+			date: getYYYYMMDD(selectedDate),
+			prior: e.target.p.value,
+			comp: false
+		};
+
+		let req = await db.addDailyDB(item);
 		
-		// Set up cursor
-		const dateIndex = trans.objectStore('daily_os').index('date');
-		const keyRange = IDBKeyRange.only(date);
-		const cursorReq = dateIndex.openCursor(keyRange);
+		if ( req ) {
+			console.log("Successfully added daily");
+			e.target.t.value = "";
+			e.target.s.value = "";
+			e.target.p.value = 3;
 
-		cursorReq.onsuccess = (e) => {
-			const cursor = e.target.result;
-			if (cursor) {
-				const daily = cursor.value;
+			const stars = dailyPriorContainer.querySelectorAll("i");
 
-				array.push(daily);
+			stars.forEach(star => {
+				if (star.id[8] <= 3) {
+					star.classList.add("star-select");
+				}
+				else {
+					star.classList.remove("star-select");
+				}
+			});
+		}
+		else {
+			console.log("Failed to add daily");
+		}
 
-				cursor.continue();
-			}	
-			else {
-				sortDailies(array);
-				return resolve(array);
-			}
-		};
 	});
 }
 
 
 /*
-Given a JSON-formatted item, add the item to the daily objectstore
+Updates the clock container with the right time and date
 */
-function addDailyDB(item) {
+function updateClock() {
+	let curDate = new Date()
 
-	return new Promise((resolve, reject) => {
+	let hour = curDate.getHours();
+	let min = curDate.getMinutes();
+	clockTimeEl.innerText = `${(hour%12 === 0) ? 12 : hour%12} : ${(min < 10) ? "0"+min : min} ${(hour < 12) ? "AM" : "PM"}`
 
-		const trans = db.transaction(['daily_os'], 'readwrite');
-		const req = trans.objectStore('daily_os').add(item);
-
-		req.onsuccess = function(e) {
-			item.did = e.target.result;
-			dailyArray.push(item);
-			return resolve(true);
-		};
-		trans.oncomplete = function(e) {
-			return resolve(true);
-		}
-		trans.onerror = function(e) {
-			return reject(false);
-		}
-	});
+	clockDateEl.innerText = getYYYYMMDD(curDate);
 }
 
-
-/*
-Delete a daily from daily objectstore given its id
-*/
-function deleteDailyDB(id) {
-
-	return new Promise((resolve, reject) => {
-		const trans = db.transaction(['daily_os'], 'readwrite');
-		const req = trans.objectStore('daily_os').delete(id);
-
-		req.onsuccess = (e) => {
-			return resolve(true);
-		}
-		req.oncomplete = (e) => {
-			return resolve(true);
-		}
-		req.onerror = (e) => {
-			return reject(false);
-		}
-	});
-}
-
-
-/*
-Toggle the complete attribute of a daily from daily objectore given its id
-*/
-function toggleCompTodoDB(id) {
-
-	return new Promise((resolve, reject) => {
-		const trans = db.transaction(['daily_os'], 'readwrite');
-		const objStore = trans.objectStore('daily_os');
-		const req = objStore.get(id);
-
-		req.onsuccess = (e) => {
-			var daily = e.target.result;
-			daily.comp = !daily.comp;
-
-			var reqUpdate = objStore.put(daily);
-			reqUpdate.onerror = (e) => {
-				return resolve(false);
-			}
-			reqUpdate.onsuccess = (e) => {
-				return resolve(true);
-			}
-		}
-	});
-}
 
 // FIXME: Delete this function on deployment
 function deleteDB() {
@@ -217,109 +331,23 @@ function insertDB() {
 		item.date = dates[Math.floor(Math.random()*dates.length)];
 		item.prior = Math.ceil(Math.random()*5);
 		item.comp = false;
-		addDailyDB(item);
+		db.addDailyDB(item);
 	}
 }
 
 
-// Add click functionality to services dropdown
-document.addEventListener("click", (e) => {
-	const isDropdownButton = e.target.matches("#services-btn i");
-	const inDropdown = e.target.matches("#services-dropdown");
-
-	if(isDropdownButton) {
-		serviceContainer.classList.toggle('active');
-	}
-	else if (!inDropdown) {
-		serviceContainer.classList.remove('active');
-	}
-});
-
-
-// Add click functionality to show add task 
-addDailyBtn.addEventListener("click", () => {
-	dailyHeaderEl.classList.toggle("show");
-});
-
-// Add functionality to select priority stars in add daily
-dailyPriorContainer.addEventListener("click", (e) => {
-
-	if (e.target.id.startsWith("priority")) {
-		let priorAmt = e.target.id[8];
-
-		const stars = dailyPriorContainer.querySelectorAll("i");
-
-		stars.forEach(star => {
-			if (star.id[8] <= priorAmt) {
-				star.classList.add("star-select");
-			}
-			else {
-				star.classList.remove("star-select");
-			}
-		});
-
-		const val = dailyPriorContainer.querySelector("input");
-		val.value = priorAmt;
-	}
-});
-
-
-// Add daily submit functionality
-addDailyContainer.addEventListener("submit", async (e) => {
-	e.preventDefault();
-
-	if (e.target.t.value == "") {
-		alert("Please type in the daily's title");
-		return;
-	}
-
-	let item = {
-		title: e.target.t.value,
-		subtitle: e.target.s.value,
-		date: getYYYYMMDD(selectedDate),
-		prior: e.target.p.value,
-		comp: false
-	};
-
-	let req = await addDailyDB(item);
-	
-	if ( req ) {
-		console.log("Successfully added daily");
-		e.target.t.value = "";
-		e.target.s.value = "";
-		e.target.p.value = 3;
-
-		const stars = dailyPriorContainer.querySelectorAll("i");
-
-		stars.forEach(star => {
-			if (star.id[8] <= 3) {
-				star.classList.add("star-select");
-			}
-			else {
-				star.classList.remove("star-select");
-			}
-		});
-	}
-	else {
-		console.log("Failed to add daily");
-	}
-
-});
-
-
-
-/*
-Updates the clock container with the right time and date
-*/
-function updateClock() {
-	curDate = new Date()
-
-	let hour = curDate.getHours();
-	let min = curDate.getMinutes();
-	clockTimeEl.innerText = `${(hour%12 == 0) ? 12 : hour%12} : ${(min < 10) ? "0"+min : min} ${(hour < 12) ? "AM" : "PM"}`
-
-	clockDateEl.innerText = getYYYYMMDD(curDate);
+return {
+	init: init,
+	deleteDB: deleteDB,
+	insertDB: insertDB
 }
+
+
+
+}();
+
+
+mainNameSpace.init();
 
 
 /*
@@ -334,3 +362,12 @@ function getYYYYMMDD(date) {
 
 	return str;
 }
+
+
+
+
+
+
+
+
+
