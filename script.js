@@ -196,12 +196,12 @@ async function init() {
 
 	let req = await db.loadDailyDB(selectedDate);
 	if (req) {
+		dailyArray = sortDailies(req);
 		renderDailies(req);
 	}
 	else {
 		alert("Failed to load dailies from database");
 	}
-	
 	
 
 }
@@ -222,7 +222,6 @@ function addNonDBEventListeners() {
 		}
 	});
 }
-
 
 function addDBEventListeners() {
 	// Add click functionality to show add task 
@@ -294,7 +293,7 @@ function addDBEventListeners() {
 	});
 }
 
-function renderDailies(dailyArray) {
+function renderDailies() {
 	dailyListEl.innerHTML = "";
 
 	if (dailyArray.length === 0) {
@@ -376,6 +375,27 @@ function renderDailies(dailyArray) {
 	return true;
 }
 
+function sortDailies(array) {
+
+	if (array.length <= 1) {
+		return;
+	}
+
+	// Partition the array such that left half are not completed and other half completed
+	let lastNC = -1;
+
+	for (let i = 0; i < array.length; i++) {
+		if (!array[i].comp) {
+			lastNC++;
+			let temp = array[lastNC];
+			array[lastNC] = array[i];
+			array[i] = temp;
+		}
+	}
+
+	return array
+}
+
 /*
 Updates the clock container with the right time and date
 */
@@ -450,6 +470,21 @@ function getYYYYMMDD(date) {
 }
 
 
+function insertionSort(array, start_index, end_index, compare) {
+
+	for (let i = start_index+1; i <= end_index; i++) {
+
+		let key = array[i];
+		let j = i-1;
+
+		while (j >= start_index && compare(key, array[j]) < 0) {
+			array[j+1] = array[j];
+			j--;
+		}
+		array[j+1] = key;
+	}
+
+}
 
 
 
