@@ -198,7 +198,7 @@ main {
 	overflow: hidden;
 }
 
-.daily-container .dailies {
+.daily-container .daily-list {
 	list-style-type: none;
 	padding: 0;
 	margin: 0;
@@ -208,7 +208,12 @@ main {
 	scrollbar-width: none;  /* Firefox */
 }
 
-.daily-container .dailies li {
+.daily-container .daily-list li {
+	position: relative;
+
+	display: flex;
+	align-content: center;
+	justify-content: flex-end;
 
 	background-color: var(--dailyColor);
 	border-radius: 5px;
@@ -222,12 +227,12 @@ main {
 	margin-bottom: 0.75rem;
 }
 
-.daily-container .dailies #daily-del-btn {
-	float: right;
+.daily-container .daily-list .daily-name {
+	position: absolute;
+	left: 1rem;
 }
 
-.daily-container .dailies .daily-priority {
-	float: right;
+.daily-container .daily-list .daily-priority {
 
 	font-size: 0.65rem;
 	margin: 0.25rem 0.5rem;
