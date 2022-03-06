@@ -219,12 +219,6 @@ main {
 }
 
 .daily-container {
-
-	display: flex;
-	flex-direction: column;
-	align-content: center;
-	justify-content: flex-start;
-
 	width: 40%;
 	max-height: 425px;
 
@@ -238,7 +232,9 @@ main {
 	list-style-type: none;
 	padding: 0;
 	margin: 0;
+	height: calc(100% - 3.5rem);
 	overflow: auto;
+
 
 	/* FIXME: Browser compatiability issues. */
 	scrollbar-width: none;  /* Firefox */
@@ -255,6 +251,7 @@ main {
 	border-radius: 5px;
 
 	width: 100%;
+	min-height: 3rem;
 
 	box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.05);
 	
@@ -263,13 +260,22 @@ main {
 	margin-bottom: 0.75rem;
 }
 
+.completed {
+	color: gray !important;
+	background-color: var(--dailyDark) !important;
+	text-decoration: line-through !important;
+}
+
+.daily-container .daily-list .daily-subtitle {
+	font-size: 0.85rem;
+	margin-left: 0.5rem;
+}
+
 .daily-container .daily-list .daily-name {
-	position: absolute;
-	left: 1rem;
+	flex-grow: 1;
 }
 
 .daily-container .daily-list .daily-priority {
-
 	font-size: 0.65rem;
 	margin: 0.25rem 0.5rem;
 	padding: 0;
@@ -289,6 +295,7 @@ main {
 	flex-wrap: wrap;
 
 	overflow: hidden;
+	min-height: 50px;
 	height: 50px;
 
 	box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.05);
@@ -303,7 +310,7 @@ main {
 }
 
 .daily-header.show {
-	height: 300px;
+	height: 250px;
 }
 
 .daily-sort-btns {
@@ -324,17 +331,6 @@ main {
 	padding: 0;
 	margin: 0.75rem 0;
 }
-
-/*.daily-add-container label:first-of-type {
-	margin: 0;
-}
-
-.daily-add-container label {
-	font-size: 1.1rem;
-	margin: 0;
-	margin-top: 0.75rem;
-	padding: 0;
-}*/
 
 .daily-add-container input {
 	background-color: var(--dailyLight);

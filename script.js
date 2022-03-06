@@ -30,7 +30,7 @@ class DBObj {
 				this.#db = e.target.result; 
 
 				// Create object store to store daily tasks
-				let todoObjStore = db.createObjectStore('daily_os', { keyPath: 'did', autoIncrement:true });
+				let todoObjStore = this.#db.createObjectStore('daily_os', { keyPath: 'did', autoIncrement:true });
 
 				// Specify schema of the daily object store
 				todoObjStore.createIndex('title', 'title', { unique:false });
@@ -55,7 +55,7 @@ class DBObj {
 
 		return new Promise((resolve) => {
 
-			array = [];
+			const array = [];
 			date = getYYYYMMDD(date); 
 
 			// Set up transaction
@@ -130,7 +130,7 @@ class DBObj {
 	/*
 	Toggle the complete attribute of a daily from daily objectore given its id
 	*/
-	toggleCompTodoDB(id) {
+	toggleCompDailyDB(id) {
 
 		return new Promise((resolve, reject) => {
 			const trans = this.#db.transaction(['daily_os'], 'readwrite');
@@ -157,7 +157,6 @@ class DBObj {
 const mainNameSpace = function() {
 
 
-
 // Get DOM objects
 const clockTimeEl = document.getElementById("clock-time");
 const clockDateEl = document.getElementById("clock-date");
@@ -170,13 +169,13 @@ const addDailyContainer = document.getElementById("daily-add-container");
 
 // "global" variables
 let db; 
-const dailyArray = [];
+let dailyArray = [];
 let selectedDate = new Date();
 
 
 async function init() {
 
-	addEventListeners();
+	addNonDBEventListeners();
 	updateClock()
 	setInterval(updateClock, 1000)
 
@@ -193,12 +192,22 @@ async function init() {
 		return false;
 	}
 	// Now do stuff with opened database
-	console.log("succ")
+	addDBEventListeners();
+
+	let req = await db.loadDailyDB(selectedDate);
+	if (req) {
+		renderDailies(req);
+	}
+	else {
+		alert("Failed to load dailies from database");
+	}
+	
+	
 
 }
 
 
-function addEventListeners() {
+function addNonDBEventListeners() {
 
 	// Add click functionality to services dropdown
 	document.addEventListener("click", (e) => {
@@ -212,8 +221,10 @@ function addEventListeners() {
 			serviceContainer.classList.remove('active');
 		}
 	});
+}
 
 
+function addDBEventListeners() {
 	// Add click functionality to show add task 
 	addDailyBtn.addEventListener("click", () => {
 		dailyHeaderEl.classList.toggle("show");
@@ -240,7 +251,6 @@ function addEventListeners() {
 			val.value = priorAmt;
 		}
 	});
-
 
 	// Add daily submit functionality
 	addDailyContainer.addEventListener("submit", async (e) => {
@@ -281,10 +291,90 @@ function addEventListeners() {
 		else {
 			console.log("Failed to add daily");
 		}
-
 	});
 }
 
+function renderDailies(dailyArray) {
+	dailyListEl.innerHTML = "";
+
+	if (dailyArray.length === 0) {
+		const noDaily = document.createElement('li');
+
+		noDaily.innerHTML = `
+			<span class="daily-name">No Dailies</span>	
+		`;
+
+		dailyListEl.append(noDaily);
+
+		return false;
+	}
+
+	dailyArray.forEach(daily => {
+
+		const dailyEl = document.createElement('li');
+
+		let priorityHTML = "";
+		for (let i = 0; i < daily.prior; i++) {
+			priorityHTML += `<i class="fa-solid fa-star"></i>`
+		}
+
+		dailyEl.innerHTML = `
+			<span class="daily-name">
+					${daily.title}			
+					<span class="daily-subtitle">
+						${daily.subtitle}
+					</span>
+			</span>	
+
+
+			<span class="daily-priority">
+				${priorityHTML}
+			</span>	
+
+			<button id="daily-del-btn" class="icon-btn small-btn">
+				<i class="fa-solid fa-trash"></i>
+			</button>
+		`;
+
+		const delbtn = dailyEl.querySelector("#daily-del-btn");
+		delbtn.addEventListener("click", () => {
+			db.deleteDailyDB(daily.did).then((val) => {
+				if (val) {
+					dailyEl.remove();
+				}
+				else {
+					console.log("Could not delete daily");
+				}
+			});
+		});
+
+		dailyEl.addEventListener("click", (e) => {
+			if (!e.target.matches("#daily-del-btn")) {
+				dailyEl.classList.toggle("completed");
+				delbtn.classList.toggle("completed");
+
+				db.toggleCompDailyDB(daily.did).then( (val) => {
+
+					if(val) {
+					}
+					else {
+						console.log("Could not toggle complete on daily");
+					}
+
+				});
+			}
+		});
+
+		if (daily.comp) {
+			dailyEl.classList.toggle("completed");
+			delbtn.classList.toggle("completed");
+		}
+
+		dailyListEl.append(dailyEl);
+	});
+
+	return true;
+}
 
 /*
 Updates the clock container with the right time and date
@@ -315,7 +405,7 @@ function deleteDB() {
 
 // FIXME: Delete this function on deployment
 function insertDB() {
-	dates = ["2022-03-06", "2022-03-07", "2022-03-08", "2022-03-09", "2022-03-10", "2022-03-11", "2022-03-12", "2022-02-06", "2022-04-06"];
+	const dates = ["2022-03-06", "2022-03-07", "2022-03-08", "2022-03-09", "2022-03-10", "2022-03-11", "2022-03-12", "2022-02-06", "2022-04-06"];
 
 	let item = {
 		title: "",
@@ -340,11 +430,7 @@ return {
 	init: init,
 	deleteDB: deleteDB,
 	insertDB: insertDB
-}
-
-
-
-}();
+} }();
 
 
 mainNameSpace.init();
