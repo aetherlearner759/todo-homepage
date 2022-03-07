@@ -196,7 +196,8 @@ async function init() {
 
 	let req = await db.loadDailyDB(selectedDate);
 	if (req) {
-		dailyArray = sortDailies(req);
+		dailyArray = req;
+		sortDailies(dailyArray);
 		renderDailies(req);
 	}
 	else {
@@ -286,6 +287,9 @@ function addDBEventListeners() {
 					star.classList.remove("star-select");
 				}
 			});
+
+			insertDaily(dailyArray, item);
+
 		}
 		else {
 			console.log("Failed to add daily");
@@ -310,69 +314,74 @@ function renderDailies() {
 
 	dailyArray.forEach(daily => {
 
-		const dailyEl = document.createElement('li');
+		dailyListEl.append(getDailyEl(daily));
 
-		let priorityHTML = "";
-		for (let i = 0; i < daily.prior; i++) {
-			priorityHTML += `<i class="fa-solid fa-star"></i>`
-		}
-
-		dailyEl.innerHTML = `
-			<span class="daily-name">
-					${daily.title}			
-					<span class="daily-subtitle">
-						${daily.subtitle}
-					</span>
-			</span>	
-
-
-			<span class="daily-priority">
-				${priorityHTML}
-			</span>	
-
-			<button id="daily-del-btn" class="icon-btn small-btn">
-				<i class="fa-solid fa-trash"></i>
-			</button>
-		`;
-
-		const delbtn = dailyEl.querySelector("#daily-del-btn");
-		delbtn.addEventListener("click", () => {
-			db.deleteDailyDB(daily.did).then((val) => {
-				if (val) {
-					dailyEl.remove();
-				}
-				else {
-					console.log("Could not delete daily");
-				}
-			});
-		});
-
-		dailyEl.addEventListener("click", (e) => {
-			if (!e.target.matches("#daily-del-btn")) {
-				dailyEl.classList.toggle("completed");
-				delbtn.classList.toggle("completed");
-
-				db.toggleCompDailyDB(daily.did).then( (val) => {
-
-					if(val) {
-					}
-					else {
-						console.log("Could not toggle complete on daily");
-					}
-
-				});
-			}
-		});
-
-		if (daily.comp) {
-			dailyEl.classList.toggle("completed");
-			delbtn.classList.toggle("completed");
-		}
-
-		dailyListEl.append(dailyEl);
 	});
 
 	return true;
+}
+
+function getDailyEl(daily) {
+	const dailyEl = document.createElement('li');
+	dailyEl.id = daily.did;
+
+	let priorityHTML = "";
+	for (let i = 0; i < daily.prior; i++) {
+		priorityHTML += `<i class="fa-solid fa-star"></i>`
+	}
+
+	dailyEl.innerHTML = `
+	<span class="daily-name">
+			${daily.title}			
+			<span class="daily-subtitle">
+				${daily.subtitle}
+			</span>
+	</span>	
+
+
+	<span class="daily-priority">
+		${priorityHTML}
+	</span>	
+
+	<button id="daily-del-btn" class="icon-btn small-btn">
+		<i class="fa-solid fa-trash"></i>
+	</button> `;
+
+	const delbtn = dailyEl.querySelector("#daily-del-btn");
+	delbtn.addEventListener("click", () => {
+		db.deleteDailyDB(daily.did).then((val) => {
+			if (val) {
+				dailyEl.remove();
+			}
+			else {
+				console.log("Could not delete daily");
+			}
+		});
+	});
+
+	dailyEl.addEventListener("click", (e) => {
+		if (!e.target.matches("#daily-del-btn")) {
+			dailyEl.classList.toggle("completed");
+			delbtn.classList.toggle("completed");
+
+			db.toggleCompDailyDB(daily.did).then( (val) => {
+
+				if(val) {
+				}
+				else {
+					console.log("Could not toggle complete on daily");
+				}
+
+			});
+		}
+	});
+
+	if (daily.comp) {
+		dailyEl.classList.toggle("completed");
+		delbtn.classList.toggle("completed");
+	}
+
+	return dailyEl;
 }
 
 function sortDailies(array) {
@@ -393,7 +402,39 @@ function sortDailies(array) {
 		}
 	}
 
-	return array
+	//FIXME: Sorting based on did for now
+	function compare(a, b) {
+		return b.did - a.did; 
+	}
+
+	// Sort non completed tasks by priority
+	insertionSort(array, 0, lastNC, compare);
+	// Sort completed tasks by priority
+	insertionSort(array, lastNC+1, array.length-1, compare);
+}
+
+function insertDaily(array, daily) {
+
+	// FIXME: hardcoded comparison for now
+	function compare(a, b) {
+		return b.did - a.did; 
+	}
+
+	if (array.length === 0) {
+		array.push(daily);
+		dailyListEl.append(getDailyEl(daily));
+	}
+
+	for (let i = 0; i < array.length; i++) {
+
+		if (array[i].comp || compare(array[i], daily) > 0) {
+			array.splice(i, 0, daily);
+			dailyListEl.insertBefore(getDailyEl(daily), dailyListEl.children[i]);
+			break;
+		}
+	}
+
+	console.log(array);
 }
 
 /*
@@ -485,10 +526,4 @@ function insertionSort(array, start_index, end_index, compare) {
 	}
 
 }
-
-
-
-
-
-
 
