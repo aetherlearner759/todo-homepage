@@ -1,4 +1,5 @@
 'use strict';
+// ^ Optimization to code 
 
 class DBObj {
 	// Private attributes
@@ -166,11 +167,17 @@ const dailyHeaderEl = document.getElementById("daily-header");
 const dailyPriorContainer = document.getElementById("daily-add-priority");
 const addDailyBtn = document.getElementById("add-daily-btn");
 const addDailyContainer = document.getElementById("daily-add-container");
+const sortAddedBtn = document.getElementById('sort-dateadded-btn');
+const sortPriorBtn = document.getElementById('sort-priority-btn');
+const sortDueBtn = document.getElementById('sort-duedate-btn');
+
 
 // "global" variables
 let db; 
 let dailyArray = [];
 let selectedDate = new Date();
+// 0 = Sort by added order, 1 = sort by priority, 2 = sort by duedate
+let sortMode = 0
 
 
 async function init() {
@@ -295,6 +302,38 @@ function addDBEventListeners() {
 			console.log("Failed to add daily");
 		}
 	});
+
+	
+	// Sort buttons functionalities
+	sortAddedBtn.addEventListener("click", (e) => {
+		sortAddedBtn.classList.add("selected");
+		sortPriorBtn.classList.remove("selected");
+		sortDueBtn.classList.remove("selected");
+
+		sortMode = 0
+		sortDailies(dailyArray)
+		renderDailies()
+	});
+
+	sortPriorBtn.addEventListener("click", (e) => {
+		sortPriorBtn.classList.add("selected");
+		sortAddedBtn.classList.remove("selected");
+		sortDueBtn.classList.remove("selected");
+
+		sortMode = 1
+		sortDailies(dailyArray)
+		renderDailies()
+	});
+
+	sortDueBtn.addEventListener("click", (e) => {
+		sortDueBtn.classList.add("selected");
+		sortAddedBtn.classList.remove("selected");
+		sortPriorBtn.classList.remove("selected");
+
+		sortMode = 2
+		sortDailies(dailyArray)
+		renderDailies()
+	});
 }
 
 function renderDailies() {
@@ -402,9 +441,25 @@ function sortDailies(array) {
 		}
 	}
 
-	//FIXME: Sorting based on did for now
-	function compare(a, b) {
-		return b.did - a.did; 
+	let compare;
+	// Sort by order added
+	if (sortMode === 0) {
+		compare = (a,b) => {
+			return b.did - a.did;
+		}
+	}
+	// Sort by priority rating
+	else if (sortMode == 1) {
+		compare = (a,b) => {
+			return b.prior - a.prior;
+		}
+	}
+	// Sort by due date
+	else if (sortMode == 2) {
+		// FIXME: hardcoded due date sort for now
+		compare = (a, b) => {
+			return a.did - b.did;
+		}
 	}
 
 	// Sort non completed tasks by priority
@@ -430,11 +485,13 @@ function insertDaily(array, daily) {
 		if (array[i].comp || compare(array[i], daily) > 0) {
 			array.splice(i, 0, daily);
 			dailyListEl.insertBefore(getDailyEl(daily), dailyListEl.children[i]);
-			break;
+			return;
 		}
 	}
 
-	console.log(array);
+	array.push(daily);
+	dailyListEl.append(getDailyEl(daily));
+	return;
 }
 
 /*

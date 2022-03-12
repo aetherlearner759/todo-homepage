@@ -386,3 +386,7 @@ main {
 .star-select {
 	color: yellow;
 }
+
+.selected {
+	color: gray !important;
+}
