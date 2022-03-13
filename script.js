@@ -110,7 +110,7 @@ class DBObj {
 	/*
 	Delete a daily from daily objectstore given its id
 	*/
-	deleteDailyDB(id) {
+	deleteDaily(id) {
 
 		return new Promise((resolve, reject) => {
 			const trans = DBObj.#db.transaction(['daily_os'], 'readwrite');
@@ -205,6 +205,7 @@ class DailyList {
 	static #sortPriorBtn = document.getElementById('sort-priority-btn');
 	static #sortDueBtn = document.getElementById('sort-duedate-btn');
 	#db;
+	#calendar = undefined;
 	#dailyArray = [];
 	length = 0;
 	#date;
@@ -216,6 +217,10 @@ class DailyList {
 		this.#date = date;
 
 		this.setEventListeners();
+	}
+
+	sync(calendar) {
+		this.#calendar = calendar;
 	}
 
 
@@ -328,6 +333,8 @@ class DailyList {
 				});
 
 				this.pushRenderDaily(item);
+				// Update calendar
+				this.#calendar.updateCount(this.#date.getDate(), "addtodo");
 
 			}
 			else {
@@ -446,32 +453,33 @@ class DailyList {
 		</button> `;
 
 		const delbtn = dailyEl.querySelector("#daily-del-btn");
-		delbtn.addEventListener("click", () => {
-			this.#db.deleteDailyDB(daily.did).then((val) => {
-				if (val) {
-					dailyEl.remove();
-					this.length--;
-				}
-				else {
-					console.log("Could not delete daily");
-				}
-			});
+		delbtn.addEventListener("click", async () => {
+			if ( !(await this.#db.deleteDaily(daily.did)) ) {
+				console.log("Could not delete daily");
+				return;
+			}
+
+			dailyEl.remove();
+			this.length--;
+			let day = parseInt(daily.date.substring(8, 10));
+			this.#calendar.updateCount(day, "deldaily", daily.comp);
+
 		});
 
-		dailyEl.addEventListener("click", (e) => {
-			if (!e.target.matches("#daily-del-btn")) {
+		dailyEl.addEventListener("click", async (e) => {
+			if (!e.target.parentNode.matches("#daily-del-btn")) {
 				dailyEl.classList.toggle("completed");
 				delbtn.classList.toggle("completed");
 
-				this.#db.toggleCompDaily(daily.did).then( (val) => {
+				if ( !(await this.#db.toggleCompDaily(daily.did)) ) {
+					console.log("Could not toggle complete on daily");
+					return;
+				}
 
-					if(val) {
-					}
-					else {
-						console.log("Could not toggle complete on daily");
-					}
+				let comp = dailyEl.classList.contains("completed");
 
-				});
+				let day = parseInt(daily.date.substring(8, 10));
+				this.#calendar.updateCount(day, "togglecomp", comp);
 			}
 		});
 
@@ -519,13 +527,17 @@ class Calendar {
 	static #calEl = document.getElementById("calendar-container");
 	static #calYMEl = document.getElementById("cal-ym");
 	#db;
-	#dailyList;
+	#dailyList = undefined;
 	#month = new Date();
 
-	constructor(db, dailylist) {
+	constructor(db, date) {
 		this.#db = db;
-		this.#dailyList = dailylist;
+		this.#month = date;
 	} 
+
+	sync(dailyList) {
+		this.#dailyList = dailyList;
+	}
 
 
 	async set(curDate = this.#month) {
@@ -596,8 +608,16 @@ class Calendar {
 			dateCell.innerHTML = `
 				${i+1-start}
 				<span class="count-container">
-				${dailyCountHTML}
+					<span id="count-todo">
+					<b class="count-num">${(todoCount > 0) ? todoCount : ""}</b> 
+					${(todoCount > 0) ? " To Dos" : ""}
+					</span>
+					<span id="count-comp">
+					<b class="count-num">${(compCount > 0) ? compCount : ""}</b> 
+					${(compCount > 0) ? " Comps" : ""}
+					</span>
 				</span>
+
 			`;
 
 
@@ -618,6 +638,7 @@ class Calendar {
 
 				// Update daily list
 				this.#dailyList.load(date).then( () => {
+					this.#dailyList.sortDailies();
 					this.#dailyList.render();
 				});
 
@@ -630,6 +651,72 @@ class Calendar {
 			}
 
 			Calendar.#calEl.appendChild(dateCell);
+		}
+	}
+
+
+	updateCount(day, mode, comp = true) {
+
+		const countContainer = Calendar.#calEl.querySelector(`#date${day} .count-container`);
+
+		if (mode === "addtodo") {
+
+			this.addCount(countContainer, true);
+			
+		}
+		else if (mode === "deldaily" && comp) {
+			
+			this.removeCount(countContainer, false);
+			
+		}
+		else if (mode === "deldaily") {
+			
+			this.removeCount(countContainer, true);
+			
+		}
+		// Toggled a uncompleted to completed
+		else if (mode === "togglecomp" && comp) {
+
+			// Add one to completed
+			this.addCount(countContainer, false);
+			// Take one out from todo
+			this.removeCount(countContainer, true);
+		}
+		else if (mode === "togglecomp") {
+
+			// Add one to todo
+			this.addCount(countContainer, true);
+			// Take one out from comp
+			this.removeCount(countContainer, false);
+		}
+	}
+
+
+	addCount(container, todo = true) {
+		const countainer = container.querySelector(`#count-${todo ? "todo" : "comp"}`);
+		const count = countainer.querySelector('b');
+
+		if (count.innerText) {
+			count.innerText = parseInt(count.innerText) + 1;
+		}
+		else {
+			countainer.innerHTML = `
+				<b class="count-num">1</b> ${todo ? "To Dos" : "Comps"}
+			`;
+		}
+	}
+
+	removeCount(container, todo = true) {
+		const countainer = container.querySelector(`#count-${todo ? "todo" : "comp"}`);
+		const count = countainer.querySelector('b');
+
+		if (count.innerText > 1) {
+			count.innerText = parseInt(count.innerText) - 1;
+		}
+		else {
+			countainer.innerHTML = `
+				<b class="count-num"></b>
+			`;
 		}
 	}
 
@@ -683,7 +770,9 @@ async function init() {
 	// Now do stuff with opened database
 
 	const dailyList = new DailyList(db, selectedDate);
-	const calendar = new Calendar(db, dailyList);
+	const calendar = new Calendar(db, selectedDate);
+	dailyList.sync(calendar);
+	calendar.sync(dailyList);
 
 	// Load today's daily list and render if possible
 	if ( !(await dailyList.load()) ) {
