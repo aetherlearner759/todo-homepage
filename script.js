@@ -1,8 +1,9 @@
 'use strict';
+// ^ Optimization to code 
 
 class DBObj {
 	// Private attributes
-	#db;
+	static #db;
 
 	constructor() {
 	}
@@ -12,13 +13,13 @@ class DBObj {
 	whether it succeeded or not. 
 	If main_db does not exist then it sets up the main_db database
 	*/
-	async openDB() {
+	async open() {
 
 		return new Promise((resolve, reject) => {
 			let req = indexedDB.open('main_db');
 
 			req.onsuccess = () => {
-				this.#db = req.result;
+				DBObj.#db = req.result;
 				return resolve(true);
 			};
 
@@ -27,10 +28,10 @@ class DBObj {
 			};
 
 			req.onupgradeneeded = (e) => {
-				this.#db = e.target.result; 
+				DBObj.#db = e.target.result; 
 
 				// Create object store to store daily tasks
-				let todoObjStore = this.#db.createObjectStore('daily_os', { keyPath: 'did', autoIncrement:true });
+				let todoObjStore = DBObj.#db.createObjectStore('daily_os', { keyPath: 'did', autoIncrement:true });
 
 				// Specify schema of the daily object store
 				todoObjStore.createIndex('title', 'title', { unique:false });
@@ -49,17 +50,18 @@ class DBObj {
 
 
 	/*
-	Given JS date object, return a promise of an array of dailies on that date.
+	Given JS date object, load daily into given array.
+	If success return true
 	*/
-	loadDailyDB(date) {
+	loadDaily(array, date) {
 
 		return new Promise((resolve) => {
 
-			const array = [];
+			array.length = 0;
 			date = getYYYYMMDD(date); 
 
 			// Set up transaction
-			const trans = this.#db.transaction(['daily_os'], 'readonly');
+			const trans = DBObj.#db.transaction(['daily_os'], 'readonly');
 			
 			// Set up cursor
 			const dateIndex = trans.objectStore('daily_os').index('date');
@@ -74,7 +76,7 @@ class DBObj {
 					cursor.continue();
 				}	
 				else {
-					return resolve(array);
+					return resolve(true);
 				}
 			};
 		});
@@ -84,11 +86,11 @@ class DBObj {
 	/*
 	Given a JSON-formatted item, add the item to the daily objectstore
 	*/
-	addDailyDB(item) {
+	addDaily(item) {
 
 		return new Promise((resolve, reject) => {
 
-			const trans = this.#db.transaction(['daily_os'], 'readwrite');
+			const trans = DBObj.#db.transaction(['daily_os'], 'readwrite');
 			const req = trans.objectStore('daily_os').add(item);
 
 			req.onsuccess = function(e) {
@@ -111,7 +113,7 @@ class DBObj {
 	deleteDailyDB(id) {
 
 		return new Promise((resolve, reject) => {
-			const trans = this.#db.transaction(['daily_os'], 'readwrite');
+			const trans = DBObj.#db.transaction(['daily_os'], 'readwrite');
 			const req = trans.objectStore('daily_os').delete(id);
 
 			req.onsuccess = (e) => {
@@ -130,10 +132,10 @@ class DBObj {
 	/*
 	Toggle the complete attribute of a daily from daily objectore given its id
 	*/
-	toggleCompDailyDB(id) {
+	toggleCompDaily(id) {
 
 		return new Promise((resolve, reject) => {
-			const trans = this.#db.transaction(['daily_os'], 'readwrite');
+			const trans = DBObj.#db.transaction(['daily_os'], 'readwrite');
 			const objStore = trans.objectStore('daily_os');
 			const req = objStore.get(id);
 
@@ -154,6 +156,324 @@ class DBObj {
 }
 
 
+class DailyList {
+	// DOM objects
+	static #dailyListEl = document.getElementById("daily-list");
+	static #dailyHeaderEl = document.getElementById("daily-header");
+	static #dailyPriorContainer = document.getElementById("daily-add-priority");
+	static #addDailyBtn = document.getElementById("add-daily-btn");
+	static #addDailyContainer = document.getElementById("daily-add-container");
+	static #sortAddedBtn = document.getElementById('sort-dateadded-btn');
+	static #sortPriorBtn = document.getElementById('sort-priority-btn');
+	static #sortDueBtn = document.getElementById('sort-duedate-btn');
+	#db;
+	#dailyArray = [];
+	length = 0;
+	#date;
+	// 0 for sort by order added, 1 for priority, 2 for due date
+	#sortMode = 0;
+
+	constructor(db, date = new Date()) {
+		this.#db = db;
+		this.#date = date;
+
+		this.setEventListeners();
+	}
+
+
+	push(daily) {
+		this.#dailyArray.push(daily);
+		this.length++;
+	}
+
+
+	getCompare(sortMode = this.#sortMode) {
+		let compare;
+		// Sort by order added
+		if (sortMode === 0) {
+			compare = (a,b) => {
+				return b.did - a.did;
+			}
+		}
+		// Sort by priority rating
+		else if (sortMode == 1) {
+			compare = (a,b) => {
+				return b.prior - a.prior;
+			}
+		}
+		// Sort by due date
+		else if (sortMode == 2) {
+			// FIXME: hardcoded due date sort for now
+			compare = (a, b) => {
+				return a.did - b.did;
+			}
+		}
+
+		return compare;
+	}
+
+	async load() {
+		let req = await this.#db.loadDaily(this.#dailyArray, this.#date);
+		if (!req) {
+			console.log("Failed to load dailies");
+			return false;
+		}
+		this.length = this.#dailyArray.length;
+		return true;
+	}
+
+
+	setEventListeners() {
+		// Add click functionality to show add task 
+		DailyList.#addDailyBtn.addEventListener("click", () => {
+			DailyList.#dailyHeaderEl.classList.toggle("show");
+		});
+
+		// Add functionality to select priority stars in add daily
+		DailyList.#dailyPriorContainer.addEventListener("click", (e) => {
+
+			if (e.target.id.startsWith("priority")) {
+				let priorAmt = e.target.id[8];
+
+				const stars = DailyList.#dailyPriorContainer.querySelectorAll("i");
+
+				stars.forEach(star => {
+					if (star.id[8] <= priorAmt) {
+						star.classList.add("star-select");
+					}
+					else {
+						star.classList.remove("star-select");
+					}
+				});
+
+				const val = DailyList.#dailyPriorContainer.querySelector("input");
+				val.value = priorAmt;
+			}
+		});
+
+		// Add daily submit functionality
+		DailyList.#addDailyContainer.addEventListener("submit", async (e) => {
+			e.preventDefault();
+
+			if (e.target.t.value === "") {
+				alert("Please type in the daily's title");
+				return;
+			}
+
+			let item = {
+				title: e.target.t.value,
+				subtitle: e.target.s.value,
+				date: getYYYYMMDD(this.#date),
+				prior: e.target.p.value,
+				comp: false
+			};
+
+			let req = await this.#db.addDaily(item);
+			
+			if ( req ) {
+				console.log("Successfully added daily");
+				e.target.t.value = "";
+				e.target.s.value = "";
+				e.target.p.value = 3;
+
+				const stars = DailyList.#dailyPriorContainer.querySelectorAll("i");
+
+				stars.forEach(star => {
+					if (star.id[8] <= 3) {
+						star.classList.add("star-select");
+					}
+					else {
+						star.classList.remove("star-select");
+					}
+				});
+
+				this.pushRenderDaily(item);
+
+			}
+			else {
+				console.log("Failed to add daily");
+			}
+		});
+
+		
+		// Sort buttons functionalities
+		DailyList.#sortAddedBtn.addEventListener("click", (e) => {
+			DailyList.#sortAddedBtn.classList.add("selected");
+			DailyList.#sortDueBtn.classList.remove("selected");			
+			DailyList.#sortPriorBtn.classList.remove("selected");
+
+			this.#sortMode = 0
+			this.sortDailies()
+			this.render()
+		});
+
+		DailyList.#sortPriorBtn.addEventListener("click", (e) => {
+			DailyList.#sortPriorBtn.classList.add("selected");
+			DailyList.#sortDueBtn.classList.remove("selected");
+			DailyList.#sortAddedBtn.classList.remove("selected");
+
+			this.#sortMode = 1
+			this.sortDailies()
+			this.render()
+		});
+
+		DailyList.#sortDueBtn.addEventListener("click", (e) => {
+			DailyList.#sortDueBtn.classList.add("selected");
+			DailyList.#sortAddedBtn.classList.remove("selected");
+			DailyList.#sortPriorBtn.classList.remove("selected");
+
+			this.#sortMode = 2
+			this.sortDailies()
+			this.render()
+		});
+	}
+
+
+	render() {
+		DailyList.#dailyListEl.innerHTML = "";
+
+		if (this.length === 0) {
+			const noDaily = document.createElement('li');
+
+			noDaily.innerHTML = `
+				<span class="daily-name">No Dailies</span>	
+			`;
+
+			DailyList.#dailyListEl.append(noDaily);
+
+			return false;
+		}
+
+		this.#dailyArray.forEach(daily => {
+
+			DailyList.#dailyListEl.append(this.getDailyEl(daily));
+
+		});
+
+		return true;
+	}
+
+
+	pushRenderDaily(daily) {
+
+		let compare = this.getCompare();
+		this.length++;
+
+		if (this.length === 0) {
+			this.push(daily);
+		}
+
+		for (let i = 0; i < this.#dailyArray.length; i++) {
+
+			if (this.#dailyArray.comp || compare(this.#dailyArray[i], daily) > 0) {
+				this.#dailyArray.splice(i, 0, daily);
+				DailyList.#dailyListEl.insertBefore(this.getDailyEl(daily), DailyList.#dailyListEl.children[i]);
+				return;
+			}
+		}
+
+		this.#dailyArray.push(daily);
+		DailyList.#dailyListEl.append(this.getDailyEl(daily));
+		return;
+
+	}
+
+
+	getDailyEl(daily) {
+		const dailyEl = document.createElement('li');
+		dailyEl.id = daily.did;
+
+		let priorityHTML = "";
+		for (let i = 0; i < daily.prior; i++) {
+			priorityHTML += `<i class="fa-solid fa-star"></i>`
+		}
+
+		dailyEl.innerHTML = `
+		<span class="daily-name">
+				${daily.title}			
+				<span class="daily-subtitle">
+					${daily.subtitle}
+				</span>
+		</span>	
+
+
+		<span class="daily-priority">
+			${priorityHTML}
+		</span>	
+
+		<button id="daily-del-btn" class="icon-btn small-btn">
+			<i class="fa-solid fa-trash"></i>
+		</button> `;
+
+		const delbtn = dailyEl.querySelector("#daily-del-btn");
+		delbtn.addEventListener("click", () => {
+			this.#db.deleteDailyDB(daily.did).then((val) => {
+				if (val) {
+					dailyEl.remove();
+					this.length--;
+				}
+				else {
+					console.log("Could not delete daily");
+				}
+			});
+		});
+
+		dailyEl.addEventListener("click", (e) => {
+			if (!e.target.matches("#daily-del-btn")) {
+				dailyEl.classList.toggle("completed");
+				delbtn.classList.toggle("completed");
+
+				this.#db.toggleCompDaily(daily.did).then( (val) => {
+
+					if(val) {
+					}
+					else {
+						console.log("Could not toggle complete on daily");
+					}
+
+				});
+			}
+		});
+
+		if (daily.comp) {
+			dailyEl.classList.toggle("completed");
+			delbtn.classList.toggle("completed");
+		}
+
+		return dailyEl;
+	}
+
+
+
+	sortDailies() {
+
+		if (this.length <= 1) {
+			return;
+		}
+
+		// Partition the array such that left half are not completed and other half completed
+		let lastNC = -1;
+
+		for (let i = 0; i < this.length; i++) {
+			if ( !(this.#dailyArray[i].comp) ) {
+				lastNC++;
+				let temp = this.#dailyArray[lastNC];
+				this.#dailyArray[lastNC] = this.#dailyArray[i];
+				this.#dailyArray[i] = temp;
+			}
+		}
+
+		let compare = this.getCompare();
+
+		// Sort non completed tasks by priority
+		insertionSort(this.#dailyArray, 0, lastNC, compare);
+		// Sort completed tasks by priority
+		insertionSort(this.#dailyArray, lastNC+1, this.length-1, compare);
+	}
+
+}
+
+
 const mainNameSpace = function() {
 
 
@@ -166,11 +486,17 @@ const dailyHeaderEl = document.getElementById("daily-header");
 const dailyPriorContainer = document.getElementById("daily-add-priority");
 const addDailyBtn = document.getElementById("add-daily-btn");
 const addDailyContainer = document.getElementById("daily-add-container");
+const sortAddedBtn = document.getElementById('sort-dateadded-btn');
+const sortPriorBtn = document.getElementById('sort-priority-btn');
+const sortDueBtn = document.getElementById('sort-duedate-btn');
+
 
 // "global" variables
 let db; 
 let dailyArray = [];
 let selectedDate = new Date();
+// 0 = Sort by added order, 1 = sort by priority, 2 = sort by duedate
+let sortMode = 0
 
 
 async function init() {
@@ -179,32 +505,30 @@ async function init() {
 	updateClock()
 	setInterval(updateClock, 1000)
 
-	db = new DBObj();
+	const db = new DBObj();
 
-	if ( !(await db.openDB()) ) {
+	if ( !(await db.open()) ) {
 		console.log("Database failed to open");
 		const errorTodoEl = document.createElement('li');
 		errorTodoEl.innerHTML = `
 			<span class="todo-name">Failed to Access Dailies</span>
 		`;
+		const dailyListEl = document.getElementById("daily-list");
 		dailyListEl.prepend(errorTodoEl);
 
 		return false;
 	}
 	// Now do stuff with opened database
-	addDBEventListeners();
 
-	let req = await db.loadDailyDB(selectedDate);
-	if (req) {
-		dailyArray = req;
-		sortDailies(dailyArray);
-		renderDailies(req);
+	const dailyList = new DailyList(db, selectedDate);
+	if ( !(await dailyList.load()) ) {
+		console.log("Failure")
+		return;
 	}
 	else {
-		alert("Failed to load dailies from database");
+		dailyList.sortDailies();
+		dailyList.render();
 	}
-	
-
 }
 
 
@@ -225,217 +549,274 @@ function addNonDBEventListeners() {
 }
 
 function addDBEventListeners() {
-	// Add click functionality to show add task 
-	addDailyBtn.addEventListener("click", () => {
-		dailyHeaderEl.classList.toggle("show");
-	});
+	function hide() {
+		// // Add click functionality to show add task 
+		// addDailyBtn.addEventListener("click", () => {
+		// 	dailyHeaderEl.classList.toggle("show");
+		// });
 
-	// Add functionality to select priority stars in add daily
-	dailyPriorContainer.addEventListener("click", (e) => {
+		// // Add functionality to select priority stars in add daily
+		// dailyPriorContainer.addEventListener("click", (e) => {
 
-		if (e.target.id.startsWith("priority")) {
-			let priorAmt = e.target.id[8];
+		// 	if (e.target.id.startsWith("priority")) {
+		// 		let priorAmt = e.target.id[8];
 
-			const stars = dailyPriorContainer.querySelectorAll("i");
+		// 		const stars = dailyPriorContainer.querySelectorAll("i");
 
-			stars.forEach(star => {
-				if (star.id[8] <= priorAmt) {
-					star.classList.add("star-select");
-				}
-				else {
-					star.classList.remove("star-select");
-				}
-			});
+		// 		stars.forEach(star => {
+		// 			if (star.id[8] <= priorAmt) {
+		// 				star.classList.add("star-select");
+		// 			}
+		// 			else {
+		// 				star.classList.remove("star-select");
+		// 			}
+		// 		});
 
-			const val = dailyPriorContainer.querySelector("input");
-			val.value = priorAmt;
-		}
-	});
+		// 		const val = dailyPriorContainer.querySelector("input");
+		// 		val.value = priorAmt;
+		// 	}
+		// });
 
-	// Add daily submit functionality
-	addDailyContainer.addEventListener("submit", async (e) => {
-		e.preventDefault();
+		// // Add daily submit functionality
+		// addDailyContainer.addEventListener("submit", async (e) => {
+		// 	e.preventDefault();
 
-		if (e.target.t.value === "") {
-			alert("Please type in the daily's title");
-			return;
-		}
+		// 	if (e.target.t.value === "") {
+		// 		alert("Please type in the daily's title");
+		// 		return;
+		// 	}
 
-		let item = {
-			title: e.target.t.value,
-			subtitle: e.target.s.value,
-			date: getYYYYMMDD(selectedDate),
-			prior: e.target.p.value,
-			comp: false
-		};
+		// 	let item = {
+		// 		title: e.target.t.value,
+		// 		subtitle: e.target.s.value,
+		// 		date: getYYYYMMDD(selectedDate),
+		// 		prior: e.target.p.value,
+		// 		comp: false
+		// 	};
 
-		let req = await db.addDailyDB(item);
+		// 	let req = await db.addDaily(item);
+			
+		// 	if ( req ) {
+		// 		console.log("Successfully added daily");
+		// 		e.target.t.value = "";
+		// 		e.target.s.value = "";
+		// 		e.target.p.value = 3;
+
+		// 		const stars = dailyPriorContainer.querySelectorAll("i");
+
+		// 		stars.forEach(star => {
+		// 			if (star.id[8] <= 3) {
+		// 				star.classList.add("star-select");
+		// 			}
+		// 			else {
+		// 				star.classList.remove("star-select");
+		// 			}
+		// 		});
+
+		// 		insertDaily(dailyArray, item);
+
+		// 	}
+		// 	else {
+		// 		console.log("Failed to add daily");
+		// 	}
+		// });
+
 		
-		if ( req ) {
-			console.log("Successfully added daily");
-			e.target.t.value = "";
-			e.target.s.value = "";
-			e.target.p.value = 3;
+		// // Sort buttons functionalities
+		// sortAddedBtn.addEventListener("click", (e) => {
+		// 	sortAddedBtn.classList.add("selected");
+		// 	sortPriorBtn.classList.remove("selected");
+		// 	sortDueBtn.classList.remove("selected");
 
-			const stars = dailyPriorContainer.querySelectorAll("i");
+		// 	sortMode = 0
+		// 	sortDailies(dailyArray)
+		// 	renderDailies()
+		// });
 
-			stars.forEach(star => {
-				if (star.id[8] <= 3) {
-					star.classList.add("star-select");
-				}
-				else {
-					star.classList.remove("star-select");
-				}
-			});
+		// sortPriorBtn.addEventListener("click", (e) => {
+		// 	sortPriorBtn.classList.add("selected");
+		// 	sortAddedBtn.classList.remove("selected");
+		// 	sortDueBtn.classList.remove("selected");
 
-			insertDaily(dailyArray, item);
+		// 	sortMode = 1
+		// 	sortDailies(dailyArray)
+		// 	renderDailies()
+		// });
 
-		}
-		else {
-			console.log("Failed to add daily");
-		}
-	});
-}
+		// sortDueBtn.addEventListener("click", (e) => {
+		// 	sortDueBtn.classList.add("selected");
+		// 	sortAddedBtn.classList.remove("selected");
+		// 	sortPriorBtn.classList.remove("selected");
 
-function renderDailies() {
-	dailyListEl.innerHTML = "";
-
-	if (dailyArray.length === 0) {
-		const noDaily = document.createElement('li');
-
-		noDaily.innerHTML = `
-			<span class="daily-name">No Dailies</span>	
-		`;
-
-		dailyListEl.append(noDaily);
-
-		return false;
-	}
-
-	dailyArray.forEach(daily => {
-
-		dailyListEl.append(getDailyEl(daily));
-
-	});
-
-	return true;
-}
-
-function getDailyEl(daily) {
-	const dailyEl = document.createElement('li');
-	dailyEl.id = daily.did;
-
-	let priorityHTML = "";
-	for (let i = 0; i < daily.prior; i++) {
-		priorityHTML += `<i class="fa-solid fa-star"></i>`
-	}
-
-	dailyEl.innerHTML = `
-	<span class="daily-name">
-			${daily.title}			
-			<span class="daily-subtitle">
-				${daily.subtitle}
-			</span>
-	</span>	
-
-
-	<span class="daily-priority">
-		${priorityHTML}
-	</span>	
-
-	<button id="daily-del-btn" class="icon-btn small-btn">
-		<i class="fa-solid fa-trash"></i>
-	</button> `;
-
-	const delbtn = dailyEl.querySelector("#daily-del-btn");
-	delbtn.addEventListener("click", () => {
-		db.deleteDailyDB(daily.did).then((val) => {
-			if (val) {
-				dailyEl.remove();
-			}
-			else {
-				console.log("Could not delete daily");
-			}
-		});
-	});
-
-	dailyEl.addEventListener("click", (e) => {
-		if (!e.target.matches("#daily-del-btn")) {
-			dailyEl.classList.toggle("completed");
-			delbtn.classList.toggle("completed");
-
-			db.toggleCompDailyDB(daily.did).then( (val) => {
-
-				if(val) {
-				}
-				else {
-					console.log("Could not toggle complete on daily");
-				}
-
-			});
-		}
-	});
-
-	if (daily.comp) {
-		dailyEl.classList.toggle("completed");
-		delbtn.classList.toggle("completed");
-	}
-
-	return dailyEl;
-}
-
-function sortDailies(array) {
-
-	if (array.length <= 1) {
+		// 	sortMode = 2
+		// 	sortDailies(dailyArray)
+		// 	renderDailies()
+		// });
 		return;
 	}
-
-	// Partition the array such that left half are not completed and other half completed
-	let lastNC = -1;
-
-	for (let i = 0; i < array.length; i++) {
-		if (!array[i].comp) {
-			lastNC++;
-			let temp = array[lastNC];
-			array[lastNC] = array[i];
-			array[i] = temp;
-		}
-	}
-
-	//FIXME: Sorting based on did for now
-	function compare(a, b) {
-		return b.did - a.did; 
-	}
-
-	// Sort non completed tasks by priority
-	insertionSort(array, 0, lastNC, compare);
-	// Sort completed tasks by priority
-	insertionSort(array, lastNC+1, array.length-1, compare);
 }
 
-function insertDaily(array, daily) {
+function hide() {
+	// function renderDailies() {
+	// 	dailyListEl.innerHTML = "";
 
-	// FIXME: hardcoded comparison for now
-	function compare(a, b) {
-		return b.did - a.did; 
-	}
+	// 	if (dailyArray.length === 0) {
+	// 		const noDaily = document.createElement('li');
 
-	if (array.length === 0) {
-		array.push(daily);
-		dailyListEl.append(getDailyEl(daily));
-	}
+	// 		noDaily.innerHTML = `
+	// 			<span class="daily-name">No Dailies</span>	
+	// 		`;
 
-	for (let i = 0; i < array.length; i++) {
+	// 		dailyListEl.append(noDaily);
 
-		if (array[i].comp || compare(array[i], daily) > 0) {
-			array.splice(i, 0, daily);
-			dailyListEl.insertBefore(getDailyEl(daily), dailyListEl.children[i]);
-			break;
-		}
-	}
+	// 		return false;
+	// 	}
 
-	console.log(array);
+	// 	dailyArray.forEach(daily => {
+
+	// 		dailyListEl.append(getDailyEl(daily));
+
+	// 	});
+
+	// 	return true;
+	// }
+
+	// function getDailyEl(daily) {
+	// 	const dailyEl = document.createElement('li');
+	// 	dailyEl.id = daily.did;
+
+	// 	let priorityHTML = "";
+	// 	for (let i = 0; i < daily.prior; i++) {
+	// 		priorityHTML += `<i class="fa-solid fa-star"></i>`
+	// 	}
+
+	// 	dailyEl.innerHTML = `
+	// 	<span class="daily-name">
+	// 			${daily.title}			
+	// 			<span class="daily-subtitle">
+	// 				${daily.subtitle}
+	// 			</span>
+	// 	</span>	
+
+
+	// 	<span class="daily-priority">
+	// 		${priorityHTML}
+	// 	</span>	
+
+	// 	<button id="daily-del-btn" class="icon-btn small-btn">
+	// 		<i class="fa-solid fa-trash"></i>
+	// 	</button> `;
+
+	// 	const delbtn = dailyEl.querySelector("#daily-del-btn");
+	// 	delbtn.addEventListener("click", () => {
+	// 		db.deleteDailyDB(daily.did).then((val) => {
+	// 			if (val) {
+	// 				dailyEl.remove();
+	// 			}
+	// 			else {
+	// 				console.log("Could not delete daily");
+	// 			}
+	// 		});
+	// 	});
+
+	// 	dailyEl.addEventListener("click", (e) => {
+	// 		if (!e.target.matches("#daily-del-btn")) {
+	// 			dailyEl.classList.toggle("completed");
+	// 			delbtn.classList.toggle("completed");
+
+	// 			db.toggleCompDaily(daily.did).then( (val) => {
+
+	// 				if(val) {
+	// 				}
+	// 				else {
+	// 					console.log("Could not toggle complete on daily");
+	// 				}
+
+	// 			});
+	// 		}
+	// 	});
+
+	// 	if (daily.comp) {
+	// 		dailyEl.classList.toggle("completed");
+	// 		delbtn.classList.toggle("completed");
+	// 	}
+
+	// 	return dailyEl;
+	// }
+
+	// function sortDailies(array) {
+
+	// 	if (array.length <= 1) {
+	// 		return;
+	// 	}
+
+	// 	// Partition the array such that left half are not completed and other half completed
+	// 	let lastNC = -1;
+
+	// 	for (let i = 0; i < array.length; i++) {
+	// 		if (!array[i].comp) {
+	// 			lastNC++;
+	// 			let temp = array[lastNC];
+	// 			array[lastNC] = array[i];
+	// 			array[i] = temp;
+	// 		}
+	// 	}
+
+	// 	let compare;
+	// 	// Sort by order added
+	// 	if (sortMode === 0) {
+	// 		compare = (a,b) => {
+	// 			return b.did - a.did;
+	// 		}
+	// 	}
+	// 	// Sort by priority rating
+	// 	else if (sortMode == 1) {
+	// 		compare = (a,b) => {
+	// 			return b.prior - a.prior;
+	// 		}
+	// 	}
+	// 	// Sort by due date
+	// 	else if (sortMode == 2) {
+	// 		// FIXME: hardcoded due date sort for now
+	// 		compare = (a, b) => {
+	// 			return a.did - b.did;
+	// 		}
+	// 	}
+
+	// 	// Sort non completed tasks by priority
+	// 	insertionSort(array, 0, lastNC, compare);
+	// 	// Sort completed tasks by priority
+	// 	insertionSort(array, lastNC+1, array.length-1, compare);
+	// }
+
+	// function insertDaily(array, daily) {
+
+	// 	// FIXME: hardcoded comparison for now
+	// 	function compare(a, b) {
+	// 		return b.did - a.did; 
+	// 	}
+
+	// 	if (array.length === 0) {
+	// 		array.push(daily);
+	// 		dailyListEl.append(getDailyEl(daily));
+	// 	}
+
+	// 	for (let i = 0; i < array.length; i++) {
+
+	// 		if (array[i].comp || compare(array[i], daily) > 0) {
+	// 			array.splice(i, 0, daily);
+	// 			dailyListEl.insertBefore(getDailyEl(daily), dailyListEl.children[i]);
+	// 			return;
+	// 		}
+	// 	}
+
+	// 	array.push(daily);
+	// 	dailyListEl.append(getDailyEl(daily));
+	// 	return;
+	// }
+	return;
 }
+
 
 /*
 Updates the clock container with the right time and date
@@ -482,7 +863,7 @@ function insertDB() {
 		item.date = dates[Math.floor(Math.random()*dates.length)];
 		item.prior = Math.ceil(Math.random()*5);
 		item.comp = false;
-		db.addDailyDB(item);
+		db.addDaily(item);
 	}
 }
 
