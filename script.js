@@ -593,26 +593,16 @@ class Calendar {
 					todoCount++;
 				}
 			}
-			// Set up HTML to show counts
-			let dailyCountHTML = "";
-			if (todoCount > 0) {
-				dailyCountHTML += 
-				`<span><b id="count-todo" class="count-num">${todoCount}</b>  To Dos</span>`;
-			}
-			if (compCount > 0) {
-				dailyCountHTML += 
-				`<span><b id="count-comp" class="count-num">${compCount}</b>  Comps</span>`;
-			}
 
 			// Set date cell HTML
 			dateCell.innerHTML = `
 				${i+1-start}
 				<span class="count-container">
-					<span id="count-todo">
+					<span id="count-todo" class="count-todo">
 					<b class="count-num">${(todoCount > 0) ? todoCount : ""}</b> 
 					${(todoCount > 0) ? " To Dos" : ""}
 					</span>
-					<span id="count-comp">
+					<span id="count-comp" class="count-comp">
 					<b class="count-num">${(compCount > 0) ? compCount : ""}</b> 
 					${(compCount > 0) ? " Comps" : ""}
 					</span>
