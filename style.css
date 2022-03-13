@@ -218,6 +218,33 @@ main {
 	font-size: 1.1rem;
 }
 
+.date-cell {
+	position: relative;
+	padding: 0.25rem;
+	border-radius: 5px;
+}
+
+.date-cell.selected {
+	color: white;
+	background-color: var(--bgColor);
+}
+
+.date-cell .count-container {
+	position: absolute;
+	top: 0.25rem;
+	right: 0.25rem;
+
+	display: flex;
+	flex-direction: column;
+
+
+	font-size: 0.45rem;
+}
+
+.count-container .count-num {
+	font-size: 0.65rem;
+}
+
 .daily-container {
 	width: 40%;
 	max-height: 425px;
@@ -387,6 +414,10 @@ main {
 	color: yellow;
 }
 
-.selected {
+.daily-sort-btns .selected {
 	color: gray;
 }
+
+
+
+

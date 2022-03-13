@@ -153,6 +153,44 @@ class DBObj {
 			}
 		});
 	}
+
+
+
+	// FIXME: Delete this function on deployment
+	deleteDB() {
+		var request = indexedDB.deleteDatabase('main_db');
+
+		request.onsuccess = function() {
+			console.log("Database deleted");
+		}
+
+		request.onerror = function() {
+			console.log("Database failed to be deleted");
+		}
+	}
+
+	// FIXME: Delete this function on deployment
+	insertDB() {
+		const dates = ["2022-03-13", "2022-03-14", "2022-03-15", "2022-03-16", "2022-03-17", "2022-03-18", "2022-03-20", "2022-02-13", "2022-04-13"];
+
+		let item = {
+			title: "",
+			subtitle: "",
+			date: "",
+			prior: "",
+			comp: false
+		};
+
+		for (let i = 1; i <= 100; i++){
+			item.title = "Task " + i;
+			item.subtitle = "Subtitle "+ i;
+			item.date = dates[Math.floor(Math.random()*dates.length)];
+			item.prior = Math.ceil(Math.random()*5);
+			item.comp = false;
+			this.addDaily(item);
+		}
+	}
+
 }
 
 
@@ -212,7 +250,9 @@ class DailyList {
 		return compare;
 	}
 
-	async load() {
+	async load(date = this.#date) {
+		this.#date = date;
+
 		let req = await this.#db.loadDaily(this.#dailyArray, this.#date);
 		if (!req) {
 			console.log("Failed to load dailies");
@@ -474,6 +514,128 @@ class DailyList {
 }
 
 
+class Calendar {
+	// DOM objects
+	static #calEl = document.getElementById("calendar-container");
+	static #calYMEl = document.getElementById("cal-ym");
+	#db;
+	#dailyList;
+	#month = new Date();
+
+	constructor(db, dailylist) {
+		this.#db = db;
+		this.#dailyList = dailylist;
+	} 
+
+
+	async set(curDate = this.#month) {
+		// First first date and last month of the current month
+		const firstDate = new Date(curDate.getFullYear(), curDate.getMonth(), 1);
+		const lastDate = new Date(curDate.getFullYear(), curDate.getMonth()+1, 0);
+
+		// Remove all date cells in the calendar. tldr: reset calendar
+		const oldDateCells = Calendar.#calEl.querySelectorAll(".date-cell");
+		oldDateCells.forEach(oldDateCell => {
+			oldDateCell.remove();
+		});
+
+		const start = firstDate.getDay();
+		const numDays = lastDate.getDate();
+
+		// Loop thorugh each day of the current month
+		for (let i = start; i < start+numDays; i++) {
+
+			// Create our date cell
+			const dateCell = document.createElement('div');
+			dateCell.id = `date${i+1-start}`;
+			dateCell.classList.add('date-cell');
+
+			// Properly align date cell in the grid
+			let row = 3 + Math.floor(i/7);
+			let col = i%7 + 1;
+			dateCell.style.gridArea = `${row}/${col}/${row}/${col}`;
+
+			// Get date object for the date cell
+			let date = new Date(curDate.getFullYear(), curDate.getMonth(), i+1-start);
+			// Load the data
+			let dailies = [];
+			if( !(await this.#db.loadDaily(dailies, date)) ) {
+				console.log("Failed to load dailiy");
+				dateCell.innerHTML = `
+					${i+1-start}
+					<span class="count-container">
+					Failed to load
+					</span>
+				`;
+				return;
+			}
+
+			// Count completed dailies and uncompleted
+			let compCount = 0;
+			let todoCount = 0;
+			for (let j = 0; j < dailies.length; j++) {
+				if (dailies[j].comp) {
+					compCount++;
+				}
+				else {
+					todoCount++;
+				}
+			}
+			// Set up HTML to show counts
+			let dailyCountHTML = "";
+			if (todoCount > 0) {
+				dailyCountHTML += 
+				`<span><b id="count-todo" class="count-num">${todoCount}</b>  To Dos</span>`;
+			}
+			if (compCount > 0) {
+				dailyCountHTML += 
+				`<span><b id="count-comp" class="count-num">${compCount}</b>  Comps</span>`;
+			}
+
+			// Set date cell HTML
+			dateCell.innerHTML = `
+				${i+1-start}
+				<span class="count-container">
+				${dailyCountHTML}
+				</span>
+			`;
+
+
+			// Click functionality
+			dateCell.addEventListener("click", (e) => {
+
+				// Correctly set selected class 
+				if (dateCell.classList.contains("selected")) {
+					return;
+				}
+
+				const oldSelectedEl = Calendar.#calEl.querySelector(".selected");
+				if (oldSelectedEl) {
+					oldSelectedEl.classList.remove('selected');
+				}
+				dateCell.classList.add("selected");
+
+
+				// Update daily list
+				this.#dailyList.load(date).then( () => {
+					this.#dailyList.render();
+				});
+
+			});
+
+
+			// Select the date cell that is the current date
+			if(i+1-start == curDate.getDate()) {
+				dateCell.classList.add("selected");
+			}
+
+			Calendar.#calEl.appendChild(dateCell);
+		}
+	}
+
+}
+
+
 const mainNameSpace = function() {
 
 
@@ -521,14 +683,22 @@ async function init() {
 	// Now do stuff with opened database
 
 	const dailyList = new DailyList(db, selectedDate);
+	const calendar = new Calendar(db, dailyList);
+
+	// Load today's daily list and render if possible
 	if ( !(await dailyList.load()) ) {
 		console.log("Failure")
 		return;
 	}
-	else {
-		dailyList.sortDailies();
-		dailyList.render();
-	}
+
+	dailyList.sortDailies();
+	dailyList.render();
+
+	// Load the calendar
+	calendar.set();
+
+
+	
 }
 
 
@@ -563,39 +733,12 @@ function updateClock() {
 }
 
 
-// FIXME: Delete this function on deployment
 function deleteDB() {
-	var request = indexedDB.deleteDatabase('main_db');
-
-	request.onsuccess = function() {
-		console.log("Database deleted");
-	}
-
-	request.onerror = function() {
-		console.log("Database failed to be deleted");
-	}
+	db.deleteDB();
 }
 
-// FIXME: Delete this function on deployment
 function insertDB() {
-	const dates = ["2022-03-06", "2022-03-07", "2022-03-08", "2022-03-09", "2022-03-10", "2022-03-11", "2022-03-12", "2022-02-06", "2022-04-06"];
 
-	let item = {
-		title: "",
-		subtitle: "",
-		date: "",
-		prior: "",
-		comp: false
-	};
-
-	for (let i = 1; i <= 100; i++){
-		item.title = "Task " + i;
-		item.subtitle = "Subtitle "+ i;
-		item.date = dates[Math.floor(Math.random()*dates.length)];
-		item.prior = Math.ceil(Math.random()*5);
-		item.comp = false;
-		db.addDaily(item);
-	}
 }
 
 
