@@ -204,6 +204,7 @@ class DailyList {
 	static #sortAddedBtn = document.getElementById('sort-dateadded-btn');
 	static #sortPriorBtn = document.getElementById('sort-priority-btn');
 	static #sortDueBtn = document.getElementById('sort-duedate-btn');
+	static #filterCompBtn = document.getElementById('filter-comp-btn');
 	#db;
 	#calendar = undefined;
 	#dailyArray = [];
@@ -211,6 +212,7 @@ class DailyList {
 	#date;
 	// 0 for sort by order added, 1 for priority, 2 for due date
 	#sortMode = 0;
+	#filterComp = false;
 
 	constructor(db, date = new Date()) {
 		this.#db = db;
@@ -342,6 +344,14 @@ class DailyList {
 			}
 		});
 
+
+		// Filter completed
+		DailyList.#filterCompBtn.addEventListener("click", (e) => {
+			DailyList.#filterCompBtn.classList.toggle("selected");
+			this.#filterComp = !this.#filterComp;
+
+			this.render();
+		});
 		
 		// Sort buttons functionalities
 		DailyList.#sortAddedBtn.addEventListener("click", (e) => {
@@ -393,7 +403,9 @@ class DailyList {
 
 		this.#dailyArray.forEach(daily => {
 
-			DailyList.#dailyListEl.append(this.getDailyEl(daily));
+			if ( !(this.#filterComp && daily.comp) ) {
+				DailyList.#dailyListEl.append(this.getDailyEl(daily));
+			}
 
 		});
 
