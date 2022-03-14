@@ -525,7 +525,7 @@ class DailyList {
 class Calendar {
 	// DOM objects
 	static #calEl = document.getElementById("calendar-container");
-	static #calYMEl = document.getElementById("cal-ym");
+	static #calYMEl = document.getElementById("calendar-ym");
 	#db;
 	#dailyList = undefined;
 	#month = new Date();
@@ -533,10 +533,51 @@ class Calendar {
 	constructor(db, date) {
 		this.#db = db;
 		this.#month = date;
+		Calendar.#calYMEl.innerText = getYYYYMMDD(date).substring(0,7);
+		this.setEventListeners();
 	} 
 
 	sync(dailyList) {
 		this.#dailyList = dailyList;
+	}
+
+
+	setEventListeners() {
+
+		Calendar.#calEl.querySelector("#cal-left").addEventListener("click", async () => {
+			this.#month.setDate(0);
+
+			// Change calendar year and month
+			Calendar.#calYMEl.innerText = getYYYYMMDD(this.#month).substring(0,7);
+			await this.set();
+
+			// Load new day 
+			if ( !(await this.#dailyList.load(this.#month)) ) {
+				console.log("Failure")
+				return;
+			}
+
+			this.#dailyList.sortDailies();
+			this.#dailyList.render();
+		});
+
+		Calendar.#calEl.querySelector("#cal-right").addEventListener("click", async () => {
+			this.#month.setMonth(this.#month.getMonth() + 1);
+			this.#month.setDate(1);
+
+			// Change calendar year and month
+			Calendar.#calYMEl.innerText = getYYYYMMDD(this.#month).substring(0,7);
+			await this.set();
+
+			// Load new day 
+			if ( !(await this.#dailyList.load(this.#month)) ) {
+				console.log("Failure")
+				return;
+			}
+
+			this.#dailyList.sortDailies();
+			this.#dailyList.render();
+		});
 	}
 
 
@@ -579,7 +620,7 @@ class Calendar {
 					Failed to load
 					</span>
 				`;
-				return;
+				continue;
 			}
 
 			// Count completed dailies and uncompleted
