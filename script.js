@@ -334,9 +334,17 @@ class DailyList {
 					}
 				});
 
+				
+				// Remove "no dailies" 
+				if (this.length === 0) {
+					DailyList.#dailyListEl.innerHTML = ''; 
+				}
+
 				this.pushRenderDaily(item);
 				// Update calendar
 				this.#calendar.updateCount(this.#date.getDate(), "addtodo");
+
+				
 
 			}
 			else {
