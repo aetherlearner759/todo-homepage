@@ -40,8 +40,16 @@ class DBObj {
 			  	todoObjStore.createIndex('prior', 'prior', { unique: false });
 				todoObjStore.createIndex('comp', 'comp', { unique: false });
 
+				// Create object store to store due dates
+				let dueObjStore = DBObj.#db.createObjectStore('due_os', { keyPath: 'ddid', autoIncrement: true });
+
+				// Specify schema of the due date object store
+				dueObjStore.createIndex('title', 'title', { unique:false });
+				dueObjStore.createIndex('duedate', 'duedate', { unique:false });
+				dueObjStore.createIndex('duetime', 'duetime', { unique: false });
+
 				// FIXME: We did not add other object stores like
-				// projects, duedates, subtasks, and maybe others
+				// projects, subtasks, and maybe others
 
 			 	console.log("Database setup complete");
 			};
@@ -73,6 +81,44 @@ class DBObj {
 				if (cursor) {
 					const daily = cursor.value;
 					array.push(daily);
+					cursor.continue();
+				}	
+				else {
+					return resolve(true);
+				}
+			};
+		});
+	}
+
+	/*
+	Given JS date object, load due dates of date month into given array.
+	If success return true
+	*/
+	loadDues(array, date) {
+
+		return new Promise((resolve) => {
+
+			// Empty array
+			array.length = 0;
+			// Get first day of month and last day of month
+			let firstDate = new Date(date.getFullYear(), date.getMonth(), 1);
+			firstDate = getYYYYMMDD(firstDate); 
+			let secondDate = new Date(date.getFullYear(), date.getMonth()+1, 0);
+			secondDate = getYYYYMMDD(secondDate);
+
+			// Set up transaction
+			const trans = DBObj.#db.transaction(['due_os'], 'readonly');
+			
+			// Set up cursor
+			const dateIndex = trans.objectStore('due_os').index('duedate');
+			const keyRange = IDBKeyRange.bound(firstDate, secondDate);
+			const cursorReq = dateIndex.openCursor(keyRange);
+
+			cursorReq.onsuccess = (e) => {
+				const cursor = e.target.result;
+				if (cursor) {
+					const due = cursor.value;
+					array.push(due);
 					cursor.continue();
 				}	
 				else {
@@ -155,6 +201,81 @@ class DBObj {
 	}
 
 
+	/*
+	Given a JSON-formatted duedate item, add the item to the duedate objectstore
+	*/
+	addDue(item) {
+		return new Promise((resolve, reject) => {
+
+			const trans = DBObj.#db.transaction(['due_os'], 'readwrite');
+			const req = trans.objectStore('due_os').add(item);
+
+			req.onsuccess = function(e) {
+				item.ddid = e.target.result;
+				return resolve(true);
+			};
+			trans.oncomplete = function(e) {
+				return resolve(true);
+			}
+			trans.onerror = function(e) {
+				return reject(false);
+			}
+		});
+	}
+
+	/*
+	Delete a due from duedate objectstore given its id
+	*/
+	deleteDue(id) {
+
+		return new Promise((resolve, reject) => {
+			const trans = DBObj.#db.transaction(['due_os'], 'readwrite');
+			const req = trans.objectStore('due_os').delete(id);
+
+			req.onsuccess = (e) => {
+				return resolve(true);
+			}
+			req.oncomplete = (e) => {
+				return resolve(true);
+			}
+			req.onerror = (e) => {
+				return reject(false);
+			}
+		});
+	}
+
+	/*
+	Updates given due given id
+	*/
+	updateDue(id, newtitle = undefined, newdate = undefined, newtime = undefined) {
+		return new Promise((resolve, reject) => {
+			let item = {};
+			item.ddid = id;
+			if (newtitle) {
+				item.title = newtitle;
+			}
+			if (newdate) {
+				item.duedate = newdate;
+			}
+			if (newtime) {
+				item.duetime = newtime;
+			}
+
+			const trans = DBObj.#db.transaction(['due_os'], 'readwrite');
+			const req = trans.objectStore('due_os').put(item);
+
+			req.onsuccess = (e) => {
+				return resolve(true);
+			}
+			req.oncomplete = (e) => {
+				return resolve(true);
+			}
+			req.onerror = (e) => {
+				return reject(false);
+			}
+		});
+	}
+
 
 	// FIXME: Delete this function on deployment
 	deleteDB() {
@@ -171,6 +292,23 @@ class DBObj {
 
 	// FIXME: Delete this function on deployment
 	insertDB() {
+		// const dates = ["2022-03-27", "2022-03-01", "2022-03-31", "2022-02-03", "2022-04-03", "2022-03-15", "2021-03-11", "2023-03-30"];
+
+		// let due = { 
+		// 	title: "",
+		// 	duedate: "",
+		// 	duetime: "",
+		// }
+
+		// for (let i = 1; i <= 10; i++) {
+		// 	due.title = "Due " + i;
+		// 	due.duedate = dates[Math.floor(Math.random()*dates.length)];
+		// 	due.duetime = "05:00";
+		// 	this.addDue(due);
+		// }
+
+
+
 		const dates = ["2022-03-13", "2022-03-14", "2022-03-15", "2022-03-16", "2022-03-17", "2022-03-18", "2022-03-20", "2022-02-13", "2022-04-13"];
 
 		let item = {
@@ -369,6 +507,8 @@ class DailyList {
 				console.log("Failed to add daily");
 			}
 		});
+		
+		// Add duedate functionality
 
 
 		// Filter completed
@@ -823,7 +963,7 @@ async function init() {
 	updateClock()
 	setInterval(updateClock, 1000)
 
-	const db = new DBObj();
+	db = new DBObj();
 
 	if ( !(await db.open()) ) {
 		console.log("Database failed to open");
@@ -854,6 +994,11 @@ async function init() {
 
 	// Load the calendar
 	calendar.set();
+
+
+	// let array = [];
+	// await db.loadDues(array, selectedDate);
+	// console.log(array);
 
 
 	
@@ -896,6 +1041,7 @@ function deleteDB() {
 }
 
 function insertDB() {
+	db.insertDB();
 
 }
 
