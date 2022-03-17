@@ -256,6 +256,9 @@ main {
 .daily-container {
 	position: relative;
 
+	display: flex;
+	flex-direction: column;
+
 	width: 40%;
 	max-height: 425px;
 
@@ -267,10 +270,13 @@ main {
 
 
 .daily-container .daily-list {
+
 	list-style-type: none;
 	padding: 0;
 	margin: 0;
-	height: calc(100% - 3.5rem);
+
+	flex-grow: 1;
+	
 	overflow: auto;
 
 
@@ -333,6 +339,9 @@ main {
 	flex-wrap: wrap;
 
 	overflow: hidden;
+
+	flex-grow: 1;
+	flex-shrink: 0;
 	height: 50px;
 
 	box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.05);
@@ -347,6 +356,7 @@ main {
 }
 
 .daily-header.show {
+
 	height: 240px;
 }
 
@@ -388,7 +398,7 @@ main {
 }
 
 .daily-due-add-container input[type="time"] {
-	margin-left: 1.25rem;
+	margin-left: 1.5rem;
 	width: auto;
 }
 
