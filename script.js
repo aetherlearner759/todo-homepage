@@ -275,15 +275,21 @@ class DailyList {
 	setEventListeners() {
 		// Add click functionality to show add task 
 		DailyList.#addDailyBtn.addEventListener("click", () => {
-			DailyList.#addDailyContainer.classList.remove("remove");
-			DailyList.#addDueContainer.classList.add("remove");
-
+			if (!DailyList.#dailyHeaderEl.classList.contains("show")) {
+				DailyList.#addDailyContainer.classList.remove("remove");
+				DailyList.#addDueContainer.classList.add("remove");
+				
+			}
 			DailyList.#dailyHeaderEl.classList.toggle("show");
+			
 		});
 		// Click functionality for showing add due date
 		DailyList.#addDueBtn.addEventListener("click", () => {
-			DailyList.#addDailyContainer.classList.add("remove");
-			DailyList.#addDueContainer.classList.remove("remove");
+			if (!DailyList.#dailyHeaderEl.classList.contains("show")) {
+				DailyList.#addDailyContainer.classList.add("remove");
+				DailyList.#addDueContainer.classList.remove("remove");
+				
+			}
 
 			DailyList.#dailyHeaderEl.classList.toggle("show");
 		});
