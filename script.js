@@ -200,7 +200,9 @@ class DailyList {
 	static #dailyHeaderEl = document.getElementById("daily-header");
 	static #dailyPriorContainer = document.getElementById("daily-add-priority");
 	static #addDailyBtn = document.getElementById("add-daily-btn");
+	static #addDueBtn = document.getElementById("add-duedate-btn");
 	static #addDailyContainer = document.getElementById("daily-add-container");
+	static #addDueContainer = document.getElementById("daily-due-add-container");
 	static #sortAddedBtn = document.getElementById('sort-dateadded-btn');
 	static #sortPriorBtn = document.getElementById('sort-priority-btn');
 	static #sortDueBtn = document.getElementById('sort-duedate-btn');
@@ -273,6 +275,16 @@ class DailyList {
 	setEventListeners() {
 		// Add click functionality to show add task 
 		DailyList.#addDailyBtn.addEventListener("click", () => {
+			DailyList.#addDailyContainer.classList.remove("remove");
+			DailyList.#addDueContainer.classList.add("remove");
+
+			DailyList.#dailyHeaderEl.classList.toggle("show");
+		});
+		// Click functionality for showing add due date
+		DailyList.#addDueBtn.addEventListener("click", () => {
+			DailyList.#addDailyContainer.classList.add("remove");
+			DailyList.#addDueContainer.classList.remove("remove");
+
 			DailyList.#dailyHeaderEl.classList.toggle("show");
 		});
 

@@ -133,35 +133,43 @@ COMPONENT - Graph/Analytics
 	</div>
 
 
-	<div id="daily-container" class="daily-container">
+	<div id="daily-container" class="daily-container" style="position:relative;">
 		
 		<div id="daily-header" class="daily-header">
-			<div class="daily-sort-btns">
-				Sort By:
-				<button id="sort-dateadded-btn" class="icon-btn small-btn selected" title="Sort by Date Added">
-					<i class="fa-solid fa-calendar"></i>
+
+			<div>
+				<div class="daily-sort-btns">
+					Sort By:
+					<button id="sort-dateadded-btn" class="icon-btn small-btn selected" title="Sort by Date Added">
+						<i class="fa-solid fa-calendar"></i>
+					</button>
+
+					<button id="sort-duedate-btn" class="icon-btn small-btn" title="Sort by Duedate">
+						<i class="fa-solid fa-clock"></i>
+					</button>
+
+					<button id="sort-priority-btn" class="icon-btn small-btn" title="Sort by Priority">
+						<i class="fa-solid fa-star"></i>
+					</button>
+				</div>
+
+				<button id="filter-comp-btn" class="icon-btn small-btn" title="Filter completed">
+					<i class="fa-solid fa-filter"></i>
 				</button>
 
-				<button id="sort-duedate-btn" class="icon-btn small-btn" title="Sort by Duedate">
-					<i class="fa-solid fa-clock"></i>
+				<button id="add-duedate-btn" class="icon-btn small-btn" title="Add Duedate">
+					<i class="fa-solid fa-calendar-plus"></i>
 				</button>
 
-				<button id="sort-priority-btn" class="icon-btn small-btn" title="Sort by Priority">
-					<i class="fa-solid fa-star"></i>
+				<button id="add-daily-btn" class="icon-btn small-btn" title="Add Daily">
+					<i class="fa-solid fa-plus"></i>
+				</button>
+
+				<button id="show-project-btn" class="icon-btn small-btn" title="Look at Projects">
+					<i class="fa-solid fa-bullseye"></i>
 				</button>
 			</div>
-
-			<button id="filter-comp-btn" class="icon-btn small-btn" title="Filter completed">
-				<i class="fa-solid fa-filter"></i>
-			</button>
-
-			<button id="add-daily-btn" class="icon-btn small-btn" title="Add Daily">
-				<i class="fa-solid fa-plus"></i>
-			</button>
-
-			<button id="show-project-btn" class="icon-btn small-btn" title="Look at Projects">
-				<i class="fa-solid fa-bullseye"></i>
-			</button>
+			
 
 			<form id="daily-add-container" class="daily-add-container">
 				<input placeholder="Daily Title" type="text" name="t" autocomplete="off">
@@ -178,11 +186,20 @@ COMPONENT - Graph/Analytics
 					<input type="text" name="p" value="3">
 				</div>
 
-				<button id="daily-add-submit" class="daily-add-submit">Add</button>
+				<button id="daily-add-submit" class="daily-add-submit">Add Daily</button>
+			</form>
+
+			<form id="daily-due-add-container" class="daily-due-add-container">
+				<input type="text" name="t" placeholder="Due Date Title">
+				<input type="date" name="da" placeholder="Due Date">
+				<div> 
+					Due Time: <input type="time" name="ti" placeholder="Due Time">
+				</div>
+
+				<button class="daily-due-add-submit">Add Due Date</button>
 			</form>
 
 		</div>
-
 			
 		<ul id="daily-list" class="daily-list">
 		</ul>

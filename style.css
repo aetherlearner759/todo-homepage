@@ -254,6 +254,8 @@ main {
 }
 
 .daily-container {
+	position: relative;
+
 	width: 40%;
 	max-height: 425px;
 
@@ -262,6 +264,7 @@ main {
 
 	overflow: hidden;
 }
+
 
 .daily-container .daily-list {
 	list-style-type: none;
@@ -326,11 +329,10 @@ main {
 	display: flex;
 	flex-direction: row;
 	justify-content: flex-end;
-	align-content: space-between;
+	align-content: flex-start;
 	flex-wrap: wrap;
 
 	overflow: hidden;
-	min-height: 50px;
 	height: 50px;
 
 	box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.05);
@@ -345,7 +347,7 @@ main {
 }
 
 .daily-header.show {
-	height: 250px;
+	height: 240px;
 }
 
 .daily-sort-btns {
@@ -353,7 +355,8 @@ main {
 	left: 1rem;
 }
 
-.daily-add-container {
+.daily-add-container, .daily-due-add-container {
+
 	flex-basis: 100%;
 
 	display: flex;
@@ -367,7 +370,7 @@ main {
 	margin: 0.75rem 0;
 }
 
-.daily-add-container input {
+.daily-add-container input, .daily-due-add-container input {
 	background-color: var(--dailyLight);
 
 	width: 100%;
@@ -384,7 +387,12 @@ main {
 	padding: 0.5rem;
 }
 
-.daily-add-container .daily-add-submit {
+.daily-due-add-container input[type="time"] {
+	margin-left: 1.25rem;
+	width: auto;
+}
+
+.daily-add-container .daily-add-submit, .daily-due-add-container .daily-due-add-submit {
 
 	border-radius: 5px;
 	box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.05);
@@ -426,6 +434,8 @@ main {
 	color: gray;
 }
 
-
+.remove {
+	display: none !important;
+}
 
 
