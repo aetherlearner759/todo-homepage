@@ -47,6 +47,7 @@ class DBObj {
 				dueObjStore.createIndex('title', 'title', { unique:false });
 				dueObjStore.createIndex('duedate', 'duedate', { unique:false });
 				dueObjStore.createIndex('duetime', 'duetime', { unique: false });
+				dueObjStore.createIndex('icon', 'icon', { unique: false });
 
 				// FIXME: We did not add other object stores like
 				// projects, subtasks, and maybe others
@@ -247,7 +248,7 @@ class DBObj {
 	/*
 	Updates given due given id
 	*/
-	updateDue(id, newtitle = undefined, newdate = undefined, newtime = undefined) {
+	updateDue(id, newtitle = undefined, newdate = undefined, newtime = undefined, icon=undefined) {
 		return new Promise((resolve, reject) => {
 			let item = {};
 			item.ddid = id;
@@ -259,6 +260,9 @@ class DBObj {
 			}
 			if (newtime) {
 				item.duetime = newtime;
+			}
+			if (icon) {
+				item.icon = icon; 
 			}
 
 			const trans = DBObj.#db.transaction(['due_os'], 'readwrite');
@@ -340,7 +344,7 @@ class DailyList {
 	static #addDailyBtn = document.getElementById("add-daily-btn");
 	static #addDueBtn = document.getElementById("add-duedate-btn");
 	static #addDailyContainer = document.getElementById("daily-add-container");
-	static #addDueContainer = document.getElementById("daily-due-add-container");
+	static #addDueContainer = document.getElementById("due-add-container");
 	static #sortAddedBtn = document.getElementById('sort-dateadded-btn');
 	static #sortPriorBtn = document.getElementById('sort-priority-btn');
 	static #sortDueBtn = document.getElementById('sort-duedate-btn');
@@ -509,6 +513,38 @@ class DailyList {
 		});
 		
 		// Add duedate functionality
+		DailyList.#addDueContainer.addEventListener("submit", async (e) => {
+			e.preventDefault();
+
+			// Check if all inputs are filled
+			if ( e.target.t.value === "" || e.target.da.value === "" || e.target.ti.value === "") {
+				alert("Please fill in everything");
+				return;
+			}
+
+			let item = {
+				title: e.target.t.value,
+				duedate: e.target.da.value,
+				duetime: e.target.ti.value,
+				icon: e.target.icon.value
+			};
+
+			let req = await this.#db.addDue(item);
+
+			if (req) {
+				e.target.t.value = "";
+				e.target.da.value = "";
+				e.target.ti.value = "";
+				// reset icon input
+
+				// Update calendar
+
+				// Update daily list
+			}
+			else {
+				console.log("Failed to add due date");
+			}
+		});
 
 
 		// Filter completed
@@ -813,17 +849,18 @@ class Calendar {
 				}
 			}
 
-			// Set date cell HTML
+			// Set date cell HTML 
 			dateCell.innerHTML = `
 				${i+1-start}
+				<span class="duedates-container">
+				</span>
 				<span class="count-container">
 					<span id="count-todo" class="count-todo">
 					<b class="count-num">${(todoCount > 0) ? todoCount : ""}</b> 
-					${(todoCount > 0) ? " To Dos" : ""}
 					</span>
+
 					<span id="count-comp" class="count-comp">
 					<b class="count-num">${(compCount > 0) ? compCount : ""}</b> 
-					${(compCount > 0) ? " Comps" : ""}
 					</span>
 				</span>
 
@@ -905,12 +942,12 @@ class Calendar {
 		const countainer = container.querySelector(`#count-${todo ? "todo" : "comp"}`);
 		const count = countainer.querySelector('b');
 
-		if (count.innerText) {
+		if (count.innerText > 0) {
 			count.innerText = parseInt(count.innerText) + 1;
 		}
 		else {
 			countainer.innerHTML = `
-				<b class="count-num">1</b> ${todo ? "To Dos" : "Comps"}
+				<b class="count-num">1</b>
 			`;
 		}
 	}
@@ -994,13 +1031,6 @@ async function init() {
 
 	// Load the calendar
 	calendar.set();
-
-
-	// let array = [];
-	// await db.loadDues(array, selectedDate);
-	// console.log(array);
-
-
 	
 }
 

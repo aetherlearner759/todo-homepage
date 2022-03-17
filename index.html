@@ -189,14 +189,50 @@ COMPONENT - Graph/Analytics
 				<button id="daily-add-submit" class="daily-add-submit">Add Daily</button>
 			</form>
 
-			<form id="daily-due-add-container" class="daily-due-add-container">
+			<form id="due-add-container" class="due-add-container">
 				<input type="text" name="t" placeholder="Due Date Title">
-				<input type="date" name="da" placeholder="Due Date">
 				<div> 
-					Due Time: <input type="time" name="ti" placeholder="Due Time">
+					Due Date / Time: <input type="date" name="da" placeholder="Due Date">
+					<input type="time" name="ti" placeholder="Due Time">
 				</div>
 
-				<button class="daily-due-add-submit">Add Due Date</button>
+				<div id="duedate-add-icon" class="duedate-add-icon">
+					Icon: 
+					<label for="square"><i class="fa-solid fa-square"></i></label>
+					<input id="square" type="radio" name="icon" value="square">
+
+					<label for="circle"><i class="fa-solid fa-circle"></i></label>
+					<input id="circle" type="radio" name="icon" value="circle">
+
+					<label for="diamond"><i class="fa-solid fa-diamond"></i></label>
+					<input id="diamond" type="radio" name="icon" value="diamond">
+
+					<label for="feather"><i class="fa-solid fa-feather"></i></label>
+					<input id="feather" type="radio" name="icon" value="feather">
+
+					<label for="certificate"><i class="fa-solid fa-certificate"></i></label>
+					<input id="certificate" type="radio" name="icon" value="certificate">
+
+					<label for="calendar-check"><i class="fa-solid fa-calendar-check"></i></label>
+					<input id="calendar-check" type="radio" name="icon" value="calendar-check">
+
+					<label for="exclamation"><i class="fa-solid fa-exclamation"></i></label>
+					<input id="exclamation" type="radio" name="icon" value="exclamation">
+
+					<label for="user-graduate"><i class="fa-solid fa-user-graduate"></i></label>
+					<input id="user-graduate" type="radio" name="icon" value="user-graduate">
+
+					<label for="user-code"><i class="fa-solid fa-user-code"></i></label>
+					<input id="user-code" type="radio" name="icon" value="user-code">
+
+					<label for="user-bag-shopping"><i class="fa-solid fa-user-bag-shopping"></i></label>
+					<input id="user-bag-shopping" type="radio" name="icon" value="user-bag-shopping">
+
+					<label for="user-book"><i class="fa-solid fa-user-book"></i></label>
+					<input id="user-book" type="radio" name="icon" value="user-book">
+				</div>
+
+				<button class="due-add-submit">Add Due Date</button>
 			</form>
 
 		</div>
