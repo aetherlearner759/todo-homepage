@@ -296,41 +296,43 @@ class DBObj {
 
 	// FIXME: Delete this function on deployment
 	insertDB() {
-		// const dates = ["2022-03-27", "2022-03-01", "2022-03-31", "2022-02-03", "2022-04-03", "2022-03-15", "2021-03-11", "2023-03-30"];
+		const dates = ["2022-03-27", "2022-03-01", "2022-03-31", "2022-02-03", "2022-04-03", "2022-03-15", "2021-03-11", "2023-03-30"];
 
-		// let due = { 
-		// 	title: "",
-		// 	duedate: "",
-		// 	duetime: "",
-		// }
-
-		// for (let i = 1; i <= 10; i++) {
-		// 	due.title = "Due " + i;
-		// 	due.duedate = dates[Math.floor(Math.random()*dates.length)];
-		// 	due.duetime = "05:00";
-		// 	this.addDue(due);
-		// }
-
-
-
-		const dates = ["2022-03-13", "2022-03-14", "2022-03-15", "2022-03-16", "2022-03-17", "2022-03-18", "2022-03-20", "2022-02-13", "2022-04-13"];
-
-		let item = {
+		let due = { 
 			title: "",
-			subtitle: "",
-			date: "",
-			prior: "",
-			comp: false
-		};
-
-		for (let i = 1; i <= 100; i++){
-			item.title = "Task " + i;
-			item.subtitle = "Subtitle "+ i;
-			item.date = dates[Math.floor(Math.random()*dates.length)];
-			item.prior = Math.ceil(Math.random()*5);
-			item.comp = false;
-			this.addDaily(item);
+			duedate: "",
+			duetime: "",
+			icon: "",
 		}
+
+		for (let i = 1; i <= 10; i++) {
+			due.title = "Due " + i;
+			due.duedate = dates[Math.floor(Math.random()*dates.length)];
+			due.duetime = "05:00";
+			due.icon = "square";
+			this.addDue(due);
+		}
+
+
+
+		// const dates = ["2022-03-13", "2022-03-14", "2022-03-15", "2022-03-16", "2022-03-17", "2022-03-18", "2022-03-20", "2022-02-13", "2022-04-13"];
+
+		// let item = {
+		// 	title: "",
+		// 	subtitle: "",
+		// 	date: "",
+		// 	prior: "",
+		// 	comp: false
+		// };
+
+		// for (let i = 1; i <= 100; i++){
+		// 	item.title = "Task " + i;
+		// 	item.subtitle = "Subtitle "+ i;
+		// 	item.date = dates[Math.floor(Math.random()*dates.length)];
+		// 	item.prior = Math.ceil(Math.random()*5);
+		// 	item.comp = false;
+		// 	this.addDaily(item);
+		// }
 	}
 
 }
@@ -735,6 +737,52 @@ class DailyList {
 
 }
 
+class DueDates {
+
+	#db; 
+	#month;
+	#dueArray = [];
+	length = 0;
+
+
+	constructor(db, date = new Date()) {
+		this.#db = db;
+		this.#month = date;
+	}
+
+	async load(date = this.#month) {
+		this.#month = date;
+
+		let req = await this.#db.loadDues(this.#dueArray, date);
+		this.length = this.#dueArray.length;
+
+		if (req) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	async getDues(array, date) {
+
+		date = getYYYYMMDD(date);
+
+		for (let i = 0; i < this.length; ++i) {
+			if (this.#dueArray[i].duedate === date) {
+				array.push(this.#dueArray[i]);
+			}
+		}
+	}
+
+	print() {
+		console.log(this.#dueArray);
+	}
+
+
+
+}
+
 
 class Calendar {
 	// DOM objects
@@ -742,6 +790,7 @@ class Calendar {
 	static #calYMEl = document.getElementById("calendar-ym");
 	#db;
 	#dailyList = undefined;
+	#dueList = undefined;
 	#month = new Date();
 
 	constructor(db, date) {
@@ -751,8 +800,9 @@ class Calendar {
 		this.setEventListeners();
 	} 
 
-	sync(dailyList) {
+	sync(dailyList, dueDates) {
 		this.#dailyList = dailyList;
+		this.#dueList = dueDates;
 	}
 
 
@@ -763,13 +813,14 @@ class Calendar {
 
 			// Change calendar year and month
 			Calendar.#calYMEl.innerText = getYYYYMMDD(this.#month).substring(0,7);
-			await this.set();
 
-			// Load new day 
-			if ( !(await this.#dailyList.load(this.#month)) ) {
+			// Load new day and due date
+			if ( !(await this.#dailyList.load(this.#month)) || !(await this.#dueList.load(this.#month)) ) {
 				console.log("Failure")
 				return;
 			}
+
+			await this.set();
 
 			this.#dailyList.sortDailies();
 			this.#dailyList.render();
@@ -783,11 +834,13 @@ class Calendar {
 			Calendar.#calYMEl.innerText = getYYYYMMDD(this.#month).substring(0,7);
 			await this.set();
 
-			// Load new day 
-			if ( !(await this.#dailyList.load(this.#month)) ) {
+			// Load new day and due date
+			if ( !(await this.#dailyList.load(this.#month)) || !(await this.#dueList.load(this.#month)) ) {
 				console.log("Failure")
 				return;
 			}
+
+			await this.set();
 
 			this.#dailyList.sortDailies();
 			this.#dailyList.render();
@@ -849,10 +902,23 @@ class Calendar {
 				}
 			}
 
+			// Get duedates
+			let duedatesHTML = "";
+			let duearray = [];
+
+			await this.#dueList.getDues(duearray, date);
+			
+			// Add the due icons to calendar
+			duearray.forEach( (due) => {
+				duedatesHTML += `<i id="${due.ddid}" title="${due.title}" class="fa-solid fa-${due.icon}"></i>`;
+			});
+
+
 			// Set date cell HTML 
 			dateCell.innerHTML = `
 				${i+1-start}
 				<span class="duedates-container">
+					${duedatesHTML}
 				</span>
 				<span class="count-container">
 					<span id="count-todo" class="count-todo">
@@ -1017,11 +1083,12 @@ async function init() {
 
 	const dailyList = new DailyList(db, selectedDate);
 	const calendar = new Calendar(db, selectedDate);
+	const dueDates = new DueDates(db, selectedDate);
 	dailyList.sync(calendar);
-	calendar.sync(dailyList);
+	calendar.sync(dailyList, dueDates);
 
 	// Load today's daily list and render if possible
-	if ( !(await dailyList.load()) ) {
+	if ( !(await dailyList.load()) || !(await dueDates.load()) ) {
 		console.log("Failure")
 		return;
 	}
