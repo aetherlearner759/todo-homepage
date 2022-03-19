@@ -353,6 +353,7 @@ class DailyList {
 	static #filterCompBtn = document.getElementById('filter-comp-btn');
 	#db;
 	#calendar = undefined;
+	#dueList = undefined;
 	#dailyArray = [];
 	length = 0;
 	#date;
@@ -367,8 +368,9 @@ class DailyList {
 		this.setEventListeners();
 	}
 
-	sync(calendar) {
+	sync(calendar, dueList) {
 		this.#calendar = calendar;
+		this.#dueList = dueList;
 	}
 
 
@@ -652,6 +654,29 @@ class DailyList {
 			priorityHTML += `<i class="fa-solid fa-star"></i>`
 		}
 
+		// TODO: Use isDue function and link dues 
+		let dueDate = this.#dueList.isDue(daily.title);
+
+		let countdownHTML = "";
+		if (dueDate) {
+			let dueDateObj = new Date(dueDate.duedate+"T"+dueDate.duetime);
+			let currentTime = new Date();
+			let dailyDateObj = new Date(`${daily.date}T${currentTime.getHours()}:${currentTime.getMinutes() < 10 ? "0"+currentTime.getMinutes() : currentTime.getMinutes()}`);
+
+			let timeRemaining = dueDateObj - dailyDateObj;
+
+			if (timeRemaining > 0) {
+
+				let hours = Math.floor(timeRemaining/1000/60/60);
+				let days = Math.floor(hours/24);
+
+				countdownHTML = `${days > 0 ? days+" days" : ""} ${hours%24} hours due`; 
+			}
+			else {
+				countdownHTML = "OverDue"
+			}
+		}
+
 		dailyEl.innerHTML = `
 		<span class="daily-name">
 				${daily.title}			
@@ -662,7 +687,8 @@ class DailyList {
 
 
 		<span class="daily-priority">
-			${priorityHTML}
+			<span>${priorityHTML}</span>
+			<span>${countdownHTML}</span>
 		</span>	
 
 		<button id="daily-del-btn" class="icon-btn small-btn">
@@ -774,6 +800,32 @@ class DueDates {
 				array.push(this.#dueArray[i]);
 			}
 		}
+	}
+
+	isDue(title) {
+
+		title = this.preprocessTitle(title);
+
+		for (let i = 0; i < this.length; ++i) {
+			if (this.preprocessTitle(this.#dueArray[i].title) === title) {
+				return this.#dueArray[i];
+			}
+		}
+
+		return false;
+	}
+
+	preprocessTitle(title) {
+
+		let res = "";
+		for (let i = 0; i < title.length; ++i) {
+
+			if (title[i] != ' ') {
+				res += title[i].toUpperCase();
+			}
+		}
+
+		return res;
 	}
 
 }
@@ -1091,7 +1143,7 @@ async function init() {
 	const dailyList = new DailyList(db, selectedDate);
 	const calendar = new Calendar(db, selectedDate);
 	const dueDates = new DueDates(db, selectedDate);
-	dailyList.sync(calendar);
+	dailyList.sync(calendar, dueDates);
 	calendar.sync(dailyList, dueDates);
 
 	// Load today's daily list and render if possible

@@ -348,6 +348,11 @@ main {
 	font-size: 0.65rem;
 	margin: 0.25rem 0.5rem;
 	padding: 0;
+
+	display: flex;
+	flex-direction: column;
+	align-content: center;
+	justify-content: center;
 }
 
 .daily-header {
