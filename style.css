@@ -456,6 +456,10 @@ main {
 	display: none;
 }
 
+.due-add-container .duedate-add-icon input[type="radio"]:checked + label {
+	color: gray;
+}
+
 .daily-add-container .daily-add-priority i:first-of-type {
 	margin-left: 0.5rem;
 }

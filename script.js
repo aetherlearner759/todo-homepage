@@ -537,7 +537,7 @@ class DailyList {
 				e.target.t.value = "";
 				e.target.da.value = "";
 				e.target.ti.value = "";
-				// reset icon input
+				e.target.icon.value = "square";
 
 				// Update calendar
 
@@ -774,12 +774,6 @@ class DueDates {
 			}
 		}
 	}
-
-	print() {
-		console.log(this.#dueArray);
-	}
-
-
 
 }
 
