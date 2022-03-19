@@ -540,6 +540,7 @@ class DailyList {
 				e.target.icon.value = "square";
 
 				// Update calendar
+				this.#calendar.addDue(item);
 
 				// Update daily list
 			}
@@ -1024,6 +1025,18 @@ class Calendar {
 				<b class="count-num"></b>
 			`;
 		}
+	}
+
+	addDue(item) {
+
+		let day = parseInt(item.duedate.substring(8,10));
+		const dueCont = Calendar.#calEl.querySelector(`#date${day} .duedates-container`);
+
+		let duedatesHTML = `<i id="${item.ddid}" title="${item.title}" class="fa-solid fa-${item.icon}"></i>`;
+
+		dueCont.innerHTML += duedatesHTML;
+
+
 	}
 
 }
