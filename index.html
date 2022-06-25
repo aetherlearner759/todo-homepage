@@ -6,7 +6,7 @@
 	<title>New Tab</title>
 
 	<link rel="stylesheet" type="text/css" href="./style.css">
-	<script type="text/javascript" src="./script.js" defer></script>
+	<script src="./js/script.js" defer></script>
 
 	<!-- Font awesome kit's code -->
 	<script src="https://kit.fontawesome.com/63c9229ecc.js" crossorigin="anonymous"></script>
@@ -41,8 +41,8 @@ COMPONENT - Calendar
 
 COMPONENT - Duedates
 	DONE: Add duedates with name and duedate
-	TODO: Dailies with same name as the duedate will be linked...
-		TODO: Dailies with duedates will have a countdown timer
+	DONE: Dailies with same name as the duedate will be linked...
+		DONE: Dailies with duedates will have a countdown timer
 
 COMPONENT - Projects
 	TODO: Add projects with name, description, priority rating, ...
@@ -62,7 +62,19 @@ COMPONENT - Settings
 COMPONENT - Graph/Analytics
 	In settings, have the option to open graph/analytics.
  -->
+<!-- 
+	Bugs to fix:
+		Add due date if
+			a duedate with the same title that isn't overdue does not exist
+		
+		Float daily priority container to the right
 
+		Deal with due date overflow in date cell
+
+		If offline, all font awesome icon disappear. 
+
+		Due date on dailies do not update after adding. 
+ -->
 </head>
 <body>
 
