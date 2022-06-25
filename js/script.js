@@ -1,341 +1,6 @@
 'use strict';
-// ^ Optimization to code 
 
-class DBObj {
-	// Private attributes
-	static #db;
-
-	constructor() {
-	}
-
-	/*
-	Opens main_db database and returns a promise containing a boolean value of 
-	whether it succeeded or not. 
-	If main_db does not exist then it sets up the main_db database
-	*/
-	async open() {
-
-		return new Promise((resolve, reject) => {
-			let req = indexedDB.open('main_db');
-
-			req.onsuccess = () => {
-				DBObj.#db = req.result;
-				return resolve(true);
-			};
-
-			req.onerror = () => {
-				return reject(false);
-			};
-
-			req.onupgradeneeded = (e) => {
-				DBObj.#db = e.target.result; 
-
-				// Create object store to store daily tasks
-				let todoObjStore = DBObj.#db.createObjectStore('daily_os', { keyPath: 'did', autoIncrement:true });
-
-				// Specify schema of the daily object store
-				todoObjStore.createIndex('title', 'title', { unique:false });
-				todoObjStore.createIndex('subtitle', 'subtitle', { unique:false });
-				todoObjStore.createIndex('date', 'date', { unique: false });
-			  	todoObjStore.createIndex('prior', 'prior', { unique: false });
-				todoObjStore.createIndex('comp', 'comp', { unique: false });
-
-				// Create object store to store due dates
-				let dueObjStore = DBObj.#db.createObjectStore('due_os', { keyPath: 'ddid', autoIncrement: true });
-
-				// Specify schema of the due date object store
-				dueObjStore.createIndex('title', 'title', { unique:false });
-				dueObjStore.createIndex('duedate', 'duedate', { unique:false });
-				dueObjStore.createIndex('duetime', 'duetime', { unique: false });
-				dueObjStore.createIndex('icon', 'icon', { unique: false });
-
-				// FIXME: We did not add other object stores like
-				// projects, subtasks, and maybe others
-
-			 	console.log("Database setup complete");
-			};
-		});
-	}
-
-
-	/*
-	Given JS date object, load daily into given array.
-	If success return true
-	*/
-	loadDaily(array, date) {
-
-		return new Promise((resolve) => {
-
-			array.length = 0;
-			date = getYYYYMMDD(date); 
-
-			// Set up transaction
-			const trans = DBObj.#db.transaction(['daily_os'], 'readonly');
-			
-			// Set up cursor
-			const dateIndex = trans.objectStore('daily_os').index('date');
-			const keyRange = IDBKeyRange.only(date);
-			const cursorReq = dateIndex.openCursor(keyRange);
-
-			cursorReq.onsuccess = (e) => {
-				const cursor = e.target.result;
-				if (cursor) {
-					const daily = cursor.value;
-					array.push(daily);
-					cursor.continue();
-				}	
-				else {
-					return resolve(true);
-				}
-			};
-		});
-	}
-
-	/*
-	Given JS date object, load due dates of date month into given array.
-	If success return true
-	*/
-	loadDues(array, date) {
-
-		return new Promise((resolve) => {
-
-			// Empty array
-			array.length = 0;
-			// Get first day of month and last day of month
-			let firstDate = new Date(date.getFullYear(), date.getMonth(), 1);
-			firstDate = getYYYYMMDD(firstDate); 
-			let secondDate = new Date(date.getFullYear(), date.getMonth()+1, 0);
-			secondDate = getYYYYMMDD(secondDate);
-
-			// Set up transaction
-			const trans = DBObj.#db.transaction(['due_os'], 'readonly');
-			
-			// Set up cursor
-			const dateIndex = trans.objectStore('due_os').index('duedate');
-			const keyRange = IDBKeyRange.bound(firstDate, secondDate);
-			const cursorReq = dateIndex.openCursor(keyRange);
-
-			cursorReq.onsuccess = (e) => {
-				const cursor = e.target.result;
-				if (cursor) {
-					const due = cursor.value;
-					array.push(due);
-					cursor.continue();
-				}	
-				else {
-					return resolve(true);
-				}
-			};
-		});
-	}
-
-
-	/*
-	Given a JSON-formatted item, add the item to the daily objectstore
-	*/
-	addDaily(item) {
-
-		return new Promise((resolve, reject) => {
-
-			const trans = DBObj.#db.transaction(['daily_os'], 'readwrite');
-			const req = trans.objectStore('daily_os').add(item);
-
-			req.onsuccess = function(e) {
-				item.did = e.target.result;
-				return resolve(true);
-			};
-			trans.oncomplete = function(e) {
-				return resolve(true);
-			}
-			trans.onerror = function(e) {
-				return reject(false);
-			}
-		});
-	}
-
-
-	/*
-	Delete a daily from daily objectstore given its id
-	*/
-	deleteDaily(id) {
-
-		return new Promise((resolve, reject) => {
-			const trans = DBObj.#db.transaction(['daily_os'], 'readwrite');
-			const req = trans.objectStore('daily_os').delete(id);
-
-			req.onsuccess = (e) => {
-				return resolve(true);
-			}
-			req.oncomplete = (e) => {
-				return resolve(true);
-			}
-			req.onerror = (e) => {
-				return reject(false);
-			}
-		});
-	}
-
-
-	/*
-	Toggle the complete attribute of a daily from daily objectore given its id
-	*/
-	toggleCompDaily(id) {
-
-		return new Promise((resolve, reject) => {
-			const trans = DBObj.#db.transaction(['daily_os'], 'readwrite');
-			const objStore = trans.objectStore('daily_os');
-			const req = objStore.get(id);
-
-			req.onsuccess = (e) => {
-				var daily = e.target.result;
-				daily.comp = !daily.comp;
-
-				var reqUpdate = objStore.put(daily);
-				reqUpdate.onerror = (e) => {
-					return resolve(false);
-				}
-				reqUpdate.onsuccess = (e) => {
-					return resolve(true);
-				}
-			}
-		});
-	}
-
-
-	/*
-	Given a JSON-formatted duedate item, add the item to the duedate objectstore
-	*/
-	addDue(item) {
-		return new Promise((resolve, reject) => {
-
-			const trans = DBObj.#db.transaction(['due_os'], 'readwrite');
-			const req = trans.objectStore('due_os').add(item);
-
-			req.onsuccess = function(e) {
-				item.ddid = e.target.result;
-				return resolve(true);
-			};
-			trans.oncomplete = function(e) {
-				return resolve(true);
-			}
-			trans.onerror = function(e) {
-				return reject(false);
-			}
-		});
-	}
-
-	/*
-	Delete a due from duedate objectstore given its id
-	*/
-	deleteDue(id) {
-
-		return new Promise((resolve, reject) => {
-			const trans = DBObj.#db.transaction(['due_os'], 'readwrite');
-			const req = trans.objectStore('due_os').delete(id);
-
-			req.onsuccess = (e) => {
-				return resolve(true);
-			}
-			req.oncomplete = (e) => {
-				return resolve(true);
-			}
-			req.onerror = (e) => {
-				return reject(false);
-			}
-		});
-	}
-
-	/*
-	Updates given due given id
-	*/
-	updateDue(id, newtitle = undefined, newdate = undefined, newtime = undefined, icon=undefined) {
-		return new Promise((resolve, reject) => {
-			let item = {};
-			item.ddid = id;
-			if (newtitle) {
-				item.title = newtitle;
-			}
-			if (newdate) {
-				item.duedate = newdate;
-			}
-			if (newtime) {
-				item.duetime = newtime;
-			}
-			if (icon) {
-				item.icon = icon; 
-			}
-
-			const trans = DBObj.#db.transaction(['due_os'], 'readwrite');
-			const req = trans.objectStore('due_os').put(item);
-
-			req.onsuccess = (e) => {
-				return resolve(true);
-			}
-			req.oncomplete = (e) => {
-				return resolve(true);
-			}
-			req.onerror = (e) => {
-				return reject(false);
-			}
-		});
-	}
-
-
-	// FIXME: Delete this function on deployment
-	deleteDB() {
-		var request = indexedDB.deleteDatabase('main_db');
-
-		request.onsuccess = function() {
-			console.log("Database deleted");
-		}
-
-		request.onerror = function() {
-			console.log("Database failed to be deleted");
-		}
-	}
-
-	// FIXME: Delete this function on deployment
-	insertDB() {
-		const dates = ["2022-03-27", "2022-03-01", "2022-03-31", "2022-02-03", "2022-04-03", "2022-03-15", "2021-03-11", "2023-03-30"];
-
-		let due = { 
-			title: "",
-			duedate: "",
-			duetime: "",
-			icon: "",
-		}
-
-		for (let i = 1; i <= 10; i++) {
-			due.title = "Due " + i;
-			due.duedate = dates[Math.floor(Math.random()*dates.length)];
-			due.duetime = "05:00";
-			due.icon = "square";
-			this.addDue(due);
-		}
-
-
-
-		// const dates = ["2022-03-13", "2022-03-14", "2022-03-15", "2022-03-16", "2022-03-17", "2022-03-18", "2022-03-20", "2022-02-13", "2022-04-13"];
-
-		// let item = {
-		// 	title: "",
-		// 	subtitle: "",
-		// 	date: "",
-		// 	prior: "",
-		// 	comp: false
-		// };
-
-		// for (let i = 1; i <= 100; i++){
-		// 	item.title = "Task " + i;
-		// 	item.subtitle = "Subtitle "+ i;
-		// 	item.date = dates[Math.floor(Math.random()*dates.length)];
-		// 	item.prior = Math.ceil(Math.random()*5);
-		// 	item.comp = false;
-		// 	this.addDaily(item);
-		// }
-	}
-
-}
+import Database from "/js/Database.mjs";
 
 
 class DailyList {
@@ -408,8 +73,8 @@ class DailyList {
 	async load(date = this.#date) {
 		this.#date = date;
 
-		let req = await this.#db.loadDaily(this.#dailyArray, this.#date);
-		if (!req) {
+		this.#dailyArray = await this.#db.loadDaily(this.#date);
+		if (!this.#dailyArray) {
 			console.log("Failed to load dailies");
 			return false;
 		}
@@ -780,10 +445,13 @@ class DueDates {
 	async load(date = this.#month) {
 		this.#month = date;
 
-		let req = await this.#db.loadDues(this.#dueArray, date);
+		console.log("DUE LOADING");
+		this.#dueArray = await this.#db.loadDues(date);
 		this.length = this.#dueArray.length;
 
-		if (req) {
+		console.log(this.#dueArray);
+
+		if (this.#dueArray) {
 			return true;
 		}
 		else {
@@ -796,7 +464,7 @@ class DueDates {
 		date = getYYYYMMDD(date);
 
 		for (let i = 0; i < this.length; ++i) {
-			if (this.#dueArray[i].duedate === date) {
+			if (this.#dueArray[i].date === date) {
 				array.push(this.#dueArray[i]);
 			}
 		}
@@ -925,8 +593,8 @@ class Calendar {
 			// Get date object for the date cell
 			let date = new Date(curDate.getFullYear(), curDate.getMonth(), i+1-start);
 			// Load the data
-			let dailies = [];
-			if( !(await this.#db.loadDaily(dailies, date)) ) {
+			let dailies = await this.#db.loadDaily(date);
+			if( !(dailies) ) {
 				console.log("Failed to load dailiy");
 				dateCell.innerHTML = `
 					${i+1-start}
@@ -954,7 +622,7 @@ class Calendar {
 			let duearray = [];
 
 			await this.#dueList.getDues(duearray, date);
-			
+
 			// Add the due icons to calendar
 			duearray.forEach( (due) => {
 				duedatesHTML += `<i id="${due.ddid}" title="${due.title}" class="fa-solid fa-${due.icon}"></i>`;
@@ -1125,19 +793,21 @@ async function init() {
 	updateClock()
 	setInterval(updateClock, 1000)
 
-	db = new DBObj();
+	db = await Database.open("main_db");
+	//await db.insertDB();
 
-	if ( !(await db.open()) ) {
-		console.log("Database failed to open");
-		const errorTodoEl = document.createElement('li');
-		errorTodoEl.innerHTML = `
-			<span class="todo-name">Failed to Access Dailies</span>
-		`;
-		const dailyListEl = document.getElementById("daily-list");
-		dailyListEl.prepend(errorTodoEl);
+	// if ( !(await db.open("main_db")) ) {
+	// 	console.log("Database failed to open");
+	// 	const errorTodoEl = document.createElement('li');
+	// 	errorTodoEl.innerHTML = `
+	// 		<span class="todo-name">Failed to Access Dailies</span>
+	// 	`;
+	// 	const dailyListEl = document.getElementById("daily-list");
+	// 	dailyListEl.prepend(errorTodoEl);
 
-		return false;
-	}
+	// 	return false;
+	// }
+
 	// Now do stuff with opened database
 
 	const dailyList = new DailyList(db, selectedDate);
@@ -1178,6 +848,8 @@ function addNonDBEventListeners() {
 }
 
 
+
+
 /*
 Updates the clock container with the right time and date
 */
@@ -1207,7 +879,6 @@ return {
 	deleteDB: deleteDB,
 	insertDB: insertDB
 } }();
-
 
 mainNameSpace.init();
 

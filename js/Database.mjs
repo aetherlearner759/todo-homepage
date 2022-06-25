@@ -25,7 +25,7 @@ const getYYYYMMDDFormat = function(date) {
 *	deleteDB - deletes database
 *
 **/
-export const Database = (function() {
+const Database = (function() {
 
 	// // FIXME: better for user to init the database rather than the module doing it itself.
 	// // Initialize database
@@ -35,43 +35,7 @@ export const Database = (function() {
 	// 	location.reload();
 	// }
 
-
-
-	// FIXME: Delete this function on deployment
-	function insertDB() {
-		let now = new Date(2022, 10, 31);
-		icons = ["square", "circle", "diamond", "feather", "certificate", "calendar-check", "exclamation", "user-graduate", "user-code", "user-bag-shopping", "user-book"];
-
-		for (let d = new Date(2022, 4, 1); d < now; d.setDate(d.getDate()+1)) {
-			let numDailies = Math.floor(Math.random()*10);
-			for(; numDailies > 0; numDailies--) {
-				let item = {
-					title: `Task ${numDailies}`,
-					subtitle: `Subtitle ${numDailies}`,
-					date: getYYYYMMDD(d),
-					prior: Math.ceil(Math.random()*5),
-					comp: Math.floor(Math.random()*2),
-				}
-				addDaily(item);
-			}
-
-			let roll = Math.floor(Math.random()*10);
-			if (roll == 9) {
-				let numDues = Math.floor(Math.random()*5);
-				for(; numDues > 0; numDues--) {
-					let due = {
-						title: `Due ${numDues}`,
-						duedate: getYYYYMMDD(d),
-						duetime: "05:00",
-						icon: icons[Math.floor(Math.random()*icons.length)]
-					}
-					addDue(due);
-				}
-			}
-		}
-
-		return;
-	}
+	let db = undefined;
 
 
 	/**
@@ -89,7 +53,8 @@ export const Database = (function() {
 			let req = indexedDB.open(database_name);
 
 			req.onsuccess = () => {
-				return resolve(req.result);
+				db = req.result;
+				return resolve(this);
 			};
 
 			req.onerror = () => {
@@ -114,7 +79,7 @@ export const Database = (function() {
 
 				// Specify schema of the due date object store
 				dueObjStore.createIndex('title', 'title', { unique:false });
-				dueObjStore.createIndex('duedate', 'duedate', { unique:false });
+				dueObjStore.createIndex('date', 'date', { unique:false });
 				dueObjStore.createIndex('duetime', 'duetime', { unique: false });
 				dueObjStore.createIndex('icon', 'icon', { unique: false });
 
@@ -133,23 +98,23 @@ export const Database = (function() {
 	* 	objectStoreName - String of the name of the object store
 	* 	object - Object to add
 	* Return
-	* 	Promise that resolves to true if success. Otherwise throws error
+	* 	Promise that resolves to added object id if success. Otherwise throws error
 	**/
 	const addObjToStore = function addObjectToObjectStore(objectStoreName, object) {
 
 		return new Promise((resolve, reject) => {
 
-			const trans = db.transaction([objectStoreName], 'writeonly');
-			const req = trans.objectStore(objectStoreName).add(object);
+			console.log(db);
+			const transaction = db.transaction([objectStoreName], 'readwrite');
+			const request = transaction.objectStore(objectStoreName).add(object);
 
-			req.onsuccess = function(e) {
-				item.did = e.target.result;
-				return resolve(true);
+			request.onsuccess = function(e) {
+				return resolve(e.target.result);
 			};
-			trans.oncomplete = function(e) {
-				return resolve(true);
+			transaction.oncomplete = function(e) {
+				return resolve(e.target.result);
 			}
-			trans.onerror = function(e) {
+			transaction.onerror = function(e) {
 				return reject(new Error(`Could not add item to ${objectStoreName}`));
 			}
 		});
@@ -221,7 +186,7 @@ export const Database = (function() {
 	**/
 	const loadDaily = async function loadAllDailyFromDay(date) {
 
-		const keyRange = IDBKeyRange.only(date);
+		const keyRange = IDBKeyRange.only(getYYYYMMDDFormat(date));
 
 		return loadObjFromDates("daily_os", keyRange);
 	}
@@ -239,10 +204,10 @@ export const Database = (function() {
 		let firstDay, lastDay;
 		if (date instanceof Date) {
 			firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-			firstDate = getYYYYMMDDFormat(firstDate); 
+			firstDay = getYYYYMMDDFormat(firstDay); 
 
 			lastDay = new Date(date.getFullYear(), date.getMonth()+1, 0);
-			secondDate = getYYYYMMDDFormat(secondDate);
+			lastDay = getYYYYMMDDFormat(lastDay);
 		}
 		// FIXME: handle non date objects
 		const keyRange = IDBKeyRange.bound(firstDay, lastDay);
@@ -346,16 +311,53 @@ export const Database = (function() {
 			console.log("Database failed to be deleted");
 		}
 	}
+
+
+
+	// FIXME: Delete this function on deployment
+	function insertDB() {
+		let now = new Date(2022, 10, 31);
+		const icons = ["square", "circle", "diamond", "feather", "certificate", "calendar-check", "exclamation", "user-graduate", "user-code", "user-bag-shopping", "user-book"];
+
+		for (let d = new Date(2022, 4, 1); d < now; d.setDate(d.getDate()+1)) {
+			let numDailies = Math.floor(Math.random()*10);
+			for(; numDailies > 0; numDailies--) {
+				let item = {
+					title: `Task ${numDailies}`,
+					subtitle: `Subtitle ${numDailies}`,
+					date: getYYYYMMDDFormat(d),
+					prior: Math.ceil(Math.random()*5),
+					comp: Math.floor(Math.random()*2),
+				}
+				addDaily(item);
+			}
+
+			let roll = Math.floor(Math.random()*10);
+			if (roll == 9) {
+				let numDues = Math.floor(Math.random()*5);
+				for(; numDues > 0; numDues--) {
+					let due = {
+						title: `Due ${numDues}`,
+						date: getYYYYMMDDFormat(d),
+						duetime: "05:00",
+						icon: icons[Math.floor(Math.random()*icons.length)]
+					}
+					addDue(due);
+				}
+			}
+		}
+
+		return;
+	}
 	
 
-	return 
-	{
+	return {
 		insertDB, 
 		open,
 		addDaily,
 		addDue,
 		loadDaily,
-		loadDue,
+		loadDues,
 		deleteDaily,
 		toggleComp,
 		deleteDB
@@ -363,3 +365,5 @@ export const Database = (function() {
 })();
 
 
+
+export default Database;
