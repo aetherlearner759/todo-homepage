@@ -13,24 +13,32 @@ const getYYYYMMDDFormat = function(date) {
 
 
 /**
-* 
-* 
-* 
+* An object containing methods for the Database object
+* Exports:
+* 	open - opens database with given name
+*	addDaily - adds daily to daily object store
+*	addDue - adds duedate to duedate object store
+*	loadDaily - load daily given date
+*	loadDue - load dues given date
+*	deleteDaily - deletes daily from daily object store
+*	toggleComp - toggles complet status of daily object
+*	deleteDB - deletes database
+*
 **/
 export const Database = (function() {
 
-	// FIXME: better for user to init the database rather than the module doing it itself.
-	// Initialize database
-	const db = await open("main_db");
-	// FIXME: Properly handle error 
-	if (!db) {
-		location.reload();
-	}
+	// // FIXME: better for user to init the database rather than the module doing it itself.
+	// // Initialize database
+	// const db = await open("main_db");
+	// // FIXME: Properly handle error 
+	// if (!db) {
+	// 	location.reload();
+	// }
 
 
 
 	// FIXME: Delete this function on deployment
-	insertDB() {
+	function insertDB() {
 		let now = new Date(2022, 10, 31);
 		icons = ["square", "circle", "diamond", "feather", "certificate", "calendar-check", "exclamation", "user-graduate", "user-code", "user-bag-shopping", "user-book"];
 
@@ -55,8 +63,7 @@ export const Database = (function() {
 						title: `Due ${numDues}`,
 						duedate: getYYYYMMDD(d),
 						duetime: "05:00",
-						icon: icons[Math.floor(Math.random()*icons.length)];
-
+						icon: icons[Math.floor(Math.random()*icons.length)]
 					}
 					addDue(due);
 				}
@@ -328,7 +335,7 @@ export const Database = (function() {
 
 
 	// FIXME: Might remove this. Keep it for debugging purposes for now
-	deleteDB() {
+	function deleteDB() {
 		var request = indexedDB.deleteDatabase('main_db');
 
 		request.onsuccess = function() {
@@ -343,6 +350,8 @@ export const Database = (function() {
 
 	return 
 	{
+		insertDB, 
+		open,
 		addDaily,
 		addDue,
 		loadDaily,
