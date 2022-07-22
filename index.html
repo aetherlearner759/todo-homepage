@@ -7,6 +7,7 @@
 
 	<link rel="stylesheet" type="text/css" href="./style.css">
 	<script type="module" src="./js/script.js" defer></script>
+	<!-- <script type="module" src="./js/test.js"></script> -->
 
 	<!-- Font awesome kit's code -->
 	<script src="https://kit.fontawesome.com/63c9229ecc.js" crossorigin="anonymous"></script>
@@ -41,8 +42,8 @@ COMPONENT - Calendar
 
 COMPONENT - Duedates
 	DONE: Add duedates with name and duedate
-	DONE: Dailies with same name as the duedate will be linked...
-		DONE: Dailies with duedates will have a countdown timer
+	TODO: Dailies with same name as the duedate will be linked...
+		TODO: Dailies with duedates will have a countdown timer
 
 COMPONENT - Projects
 	TODO: Add projects with name, description, priority rating, ...
@@ -79,23 +80,23 @@ COMPONENT - Graph/Analytics
 <body>
 
 
-<div id="clock-container" class="clock-container">
+<div id="clock-container">
 	<h1 id="clock-time">HH:MM</h1>
 	<h2 id="clock-date">YYYY-MM-DD</h2>	
 </div>
 
 <!-- FIXME: action attribute is hard coded -->
-<form id="search-container" class="search-container" method="get" action="http://google.com/search">
+<form id="search-container" method="get" action="http://google.com/search">
 	<input type="text" name="q" placeholder="Search" autocomplete="off">
 </form>
 
 
-<div id="btn-container" class="btn-container">
-	<div id="services-container" class="services-container">
+<div id="btn-container">
+	<div id="services-container">
 		<button id="services-btn" class="icon-btn">
 			<i class="fa-solid fa-table-cells"></i>
 		</button>
-		<div id="services-dropdown" class="services-dropdown">
+		<div id="services-dropdown">
 			<a href="https://mail.google.com/mail/?authuser=0"><img src="./res/img/gmailicon.png"></a>
 			<a href="https://drive.google.com/?authuser=1"><img src="./res/img/googledriveicon.png"></a>
 			<a href="https://docs.google.com/document/?usp=docs_ald&authuser=0"><img src="./res/img/googledocsicon.png"></a>
@@ -104,11 +105,12 @@ COMPONENT - Graph/Analytics
 		</div>
 	</div>
 
-	<div id="settings-container" class="settings-container">
+<!-- FIXME: Add this in -->
+	<div id="settings-container">
 		<button id="settings-btn" class="icon-btn">
 			<i class="fa-solid fa-gear"></i>
 		</button>
-		<form class="settings-dropdown">
+		<form id="settings-dropdown">
 			<label for="search-engine-input">Change Preferred Search Engine: </label>
 			<input id="search-engine-input" type="text" name="searchengine">
 			<label>Restore Deleted Goals</label>
@@ -123,8 +125,8 @@ COMPONENT - Graph/Analytics
 
 <main>
 
-	<div id="calendar-container" class="calendar-container">
-		<div class="calendar-header">
+	<div id="calendar-container">
+		<div id="calendar-header">
 			<button id="cal-left" class="icon-btn small-btn">
 				<i class="fa-solid fa-chevron-left"></i>
 			</button>
@@ -135,22 +137,27 @@ COMPONENT - Graph/Analytics
 				<i class="fa-solid fa-chevron-right"></i>
 			</button>
 		</div>
-		<span class="cal-day">Sun</span>
-		<span class="cal-day">Mon</span>
-		<span class="cal-day">Tues</span>
-		<span class="cal-day">Wed</span>
-		<span class="cal-day">Thurs</span>
-		<span class="cal-day">Fri</span>
-		<span class="cal-day">Sat</span>
+		<div id="calendar-weekdays">
+			<span class="cal-day">Sun</span>
+			<span class="cal-day">Mon</span>
+			<span class="cal-day">Tues</span>
+			<span class="cal-day">Wed</span>
+			<span class="cal-day">Thurs</span>
+			<span class="cal-day">Fri</span>
+			<span class="cal-day">Sat</span>
+		</div>
+		<div id="datecell-container">
+			
+		</div>
 	</div>
 
 
-	<div id="daily-container" class="daily-container" style="position:relative;">
+	<div id="daily-container">
 		
-		<div id="daily-header" class="daily-header">
+		<div id="daily-header">
 
 			<div>
-				<div class="daily-sort-btns">
+				<div id="daily-sort-btns">
 					Sort By:
 					<button id="sort-dateadded-btn" class="icon-btn small-btn selected" title="Sort by Date Added">
 						<i class="fa-solid fa-calendar"></i>
@@ -183,12 +190,12 @@ COMPONENT - Graph/Analytics
 			</div>
 			
 
-			<form id="daily-add-container" class="daily-add-container">
+			<form id="daily-add-container">
 				<input placeholder="Daily Title" type="text" name="t" autocomplete="off">
 
 				<input placeholder="Daily Subtitle" type="text" name="s" autocomplete="off">
 
-				<div id="daily-add-priority" class="daily-add-priority">
+				<div id="daily-add-priority">
 					Rate Priority: 
 					<i id="priority1" class="star-select fa-solid fa-star"></i>
 					<i id="priority2" class="star-select fa-solid fa-star"></i>
@@ -198,17 +205,17 @@ COMPONENT - Graph/Analytics
 					<input type="text" name="p" value="3">
 				</div>
 
-				<button id="daily-add-submit" class="daily-add-submit">Add Daily</button>
+				<button id="daily-add-submit">Add Daily</button>
 			</form>
 
-			<form id="due-add-container" class="due-add-container">
+			<form id="due-add-container">
 				<input type="text" name="t" placeholder="Due Date Title" autocomplete="off">
 				<div> 
 					Due Date / Time: <input type="date" name="da" placeholder="Due Date">
 					<input type="time" name="ti" placeholder="Due Time">
 				</div>
 
-				<div id="duedate-add-icon" class="duedate-add-icon">
+				<div id="duedate-add-icon">
 					Icon: 
 					<input id="square" type="radio" name="icon" value="square">
 					<label for="square"><i class="fa-solid fa-square"></i></label>
@@ -244,20 +251,16 @@ COMPONENT - Graph/Analytics
 					<label for="user-book"><i class="fa-solid fa-user-book"></i></label>
 				</div>
 
-				<button class="due-add-submit">Add Due Date</button>
+				<button id="due-add-submit">Add Due Date</button>
 			</form>
 
 		</div>
 			
-		<ul id="daily-list" class="daily-list">
-		</ul>
+		<ul id="daily-list"></ul>
 
 	</div>
-
-	
-
 </main>
 
-
 </body>
+
 </html>

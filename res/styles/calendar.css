@@ -1,0 +1,112 @@
+/**
+* Styling of calendar in the index.html page
+* Variables used:
+* 
+**/
+
+#calendar-container {
+	background-color: var(--bgLight);
+	width: 55%;
+	height: 460px;
+
+	display: flex;
+	flex-direction: column;
+
+	border-radius: 10px;
+	box-shadow: 0 0 5px 10px rgba(0, 0, 0, 0.1);
+
+	padding: 1.25rem;
+	padding-top: 0.5rem;
+}
+
+#calendar-header {
+	flex-basis: 40px;
+	width: 100%;
+
+	display: flex;
+	align-content: center;
+	justify-content: space-between;
+}
+
+#calendar-ym {
+	font-size: 1.2rem;
+	margin: auto;
+}
+
+#calendar-weekdays {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+}
+
+.cal-day {
+	text-align: center;
+	font-size: 1.1rem;
+}
+
+#datecell-container {
+	flex-grow: 1;
+	padding-top: 1rem;
+
+	display: grid;
+	/*grid-template-rows: 2.5rem 3rem repeat(4, 1fr);*/
+	grid-template-columns: repeat(7, 1fr);
+}
+
+.date-cell {
+	position: relative;
+	padding: 0.25rem;
+	border-radius: 5px;
+}
+
+.date-cell.selected {
+	color: white;
+	background-color: var(--bgColor);
+}
+
+.date-cell .date-num {
+	font-size: 0.9rem;
+}
+
+.date-cell .duedates-container {
+	position: absolute;
+	top: 0.25rem;
+	right: 0.25rem;
+
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	justify-content: flex-end;
+
+	height: 60%;
+	width: 60%;
+	overflow: hidden;
+
+	padding: 0;
+
+	font-size: 0.75rem;
+}
+
+.date-cell .duedates-container i {
+	margin: 0.15rem;
+}
+
+.date-cell .count-container {
+	position: absolute;
+	bottom: 0.25rem;
+	right: 0.5rem;
+
+	display: flex;
+	flex-direction: row;
+
+
+	font-size: 0.45rem;
+}
+
+.date-cell .count-container .count-todo {
+	color: white;
+}
+
+.date-cell .count-container .count-comp {
+	color: gray;
+}

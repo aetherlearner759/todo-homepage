@@ -1,0 +1,223 @@
+/**
+* Styling of daily list, the right sidebar of the index.html page.
+* Variables used: 
+*	
+**/
+
+#daily-container {
+	display: flex;
+	flex-direction: column;
+
+	width: 40%;
+	max-height: 460px;
+
+	overflow: hidden;
+}
+
+
+/* Daily List Header Styling */
+#daily-header {
+	position: relative;
+
+	background-color: var(--dailyDark);
+
+	border-radius: 5px 5px 0px 0px;
+
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-end;
+	align-content: flex-start;
+	flex-wrap: wrap;
+
+	overflow: hidden;
+
+	flex-shrink: 0;
+	height: 50px;
+
+	box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.05);
+	
+	width: 100%;
+
+	padding: 0.75rem;
+	margin: 0rem;
+	margin-bottom: 0.75rem;
+
+	transition: height 500ms ease-in-out;
+}
+
+#daily-header.show {
+	height: 240px;
+}
+
+#daily-sort-btns {
+	position: absolute;
+	left: 1rem;
+}
+
+/* Daily List Styling */
+#daily-list {
+
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+
+	flex-grow: 1;
+
+	overflow: auto;
+
+	/* FIXME: Browser compatiability issues. */
+	scrollbar-width: none;  /* Firefox */
+}
+
+/* Daily Elements Styling */
+#daily-list li.completed {
+	background-color: var(--dailyDark);
+	color: gray;
+}
+
+#daily-list li {
+	position: relative;
+
+	display: flex;
+	align-items: center;
+
+	background-color: var(--dailyColor);
+	color: white;
+	border-radius: 5px;
+
+	width: 100%;
+	height: 4.2rem;
+
+	box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.05);
+	
+	padding: 1rem;
+	margin: 0;
+	margin-bottom: 0.75rem;
+}
+
+#daily-list .daily-name {
+}
+
+#daily-list .daily-subtitle {
+	font-size: 0.80rem;
+
+	padding-top: 0.10rem;
+	margin-left: 0.6rem;
+
+	flex-grow: 1;
+}
+
+#daily-list .daily-info-container {
+	margin: 0.5rem;
+
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+}
+
+#daily-list .daily-priority {
+	font-size: 0.65rem;
+	margin: 0.25rem 0.5rem;
+	padding: 0;
+
+	display: flex;
+	flex-direction: row;
+	align-content: flex-start;
+	justify-content: center;
+}
+
+#daily-list .daily-countdown {
+	font-size: 0.65rem;
+	margin: 0.25rem 0.5rem;
+	padding: 0;
+
+	display: flex;
+	flex-direction: column;
+	align-content: center;
+	justify-content: center;
+}
+
+#daily-list #daily-del-btn {
+	color: inherit;
+}
+
+
+/* Daily Add / Due Add Form Styling */
+#daily-add-container, #due-add-container {
+
+	flex-basis: 100%;
+
+	display: flex;
+	flex-direction: column;
+	align-content: center;
+	justify-content: flex-start;
+
+	width: 100%;
+	
+	padding: 0;
+	margin: 0.75rem 0;
+}
+
+#daily-add-container input, #due-add-container input {
+	background-color: var(--dailyLight);
+
+	width: 100%;
+	height: 2rem;
+	
+	border: none;
+	border-radius: 5px;
+
+	font-family: inherit;
+	font-size: 1rem;
+	color: var(--fontColor);;
+
+	margin: 0.5rem 0;
+	padding: 0.5rem;
+}
+
+#due-add-container input[type="time"], #due-add-container input[type="date"]  {
+	margin-left: 1rem;
+	width: auto;
+}
+
+#daily-add-submit, #due-add-submit {
+
+	border-radius: 5px;
+	box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.05);
+
+	margin: auto;
+	margin-top: 0.5rem;
+	padding: 0.25rem 2.5rem;
+
+	border: none;
+	outline: none;
+	color: white;
+	font-family: inherit;
+
+	background-color: var(--dailyLight);
+}
+
+#daily-add-priority {
+	margin: 0.5rem 0;
+	color: white;
+}
+
+#duedate-add-icon i {
+	margin: 0.75rem 0.2rem;
+}
+
+#daily-add-priority input, #due-add-container #duedate-add-icon input{
+	display: none;
+}
+
+#duedate-add-icon input[type="radio"]:checked + label {
+	color: gray;
+}
+
+#daily-add-priority i:first-of-type {
+	margin-left: 0.5rem;
+}
+
+#daily-add-priority i {
+	transition: color 200ms ease-in-out;
+}
